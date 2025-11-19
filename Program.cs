@@ -1,5 +1,6 @@
  using ComputorV2.Core.Parsing;
  using ComputorV2.Interactive;
+ using ComputorV2.IO;
 
  namespace ComputorV2
  {
@@ -7,63 +8,15 @@
 	{
 		static void Main(string[] args)
 		{
-			try
+			var repl = new REPL();
+			
+			Console.CancelKeyPress += (sender, e) =>
 			{
-				var parser = new Parser();
-				var helpSystem = new HelpSystem();
-				
-				if (args.Length != 0)
-				{
-					Console.WriteLine("Error: Execution: please run './computorV2' with no arguments or execute 'make run'.");
-					return;
-				}
+				e.Cancel = true;
+				repl.Stop();
+			};
 
-				string	input = "";
-				bool	showGraphs = false;
-
-				PrintHeader();
-				Console.WriteLine("Welcome to Computor V2!");
-				Console.WriteLine("Type your command or 'help' for assistence.");
-				Console.Write("> ");
-
-				input = Console.ReadLine() ?? string.Empty;
-
-				while (true)
-				{
-					if (string.IsNullOrWhiteSpace(input))
-					{
-						while (string.IsNullOrWhiteSpace(input))
-						{
-							Console.WriteLine("No input detected.\nType your command or 'help' for assistence.");
-							input = Console.ReadLine() ?? string.Empty;
-						}
-					}
-
-					if (input == "exit")
-					{
-						Console.WriteLine("Thanks for using computorV2!");
-						return;
-					}
-					else if (input == "help")
-					{
-						helpSystem.print_help();
-					}
-					else
-					{
-						parser.process_input(input);
-					}
-
-					input = "";
-					Console.Write("> ");
-					input = Console.ReadLine() ?? string.Empty;
-				
-				}
-				
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine($"Error: {ex.Message}");
-			}
+			repl.Run();
 		}
 
 		static public void PrintHeader()
