@@ -21,6 +21,7 @@ namespace ComputorV2.Interactive
 
 		public void Run()
 		{
+			_displayManager.DisplayHeader();
 			_displayManager.DisplayWelcome();
 			_isRunning = true;
 

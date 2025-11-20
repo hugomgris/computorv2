@@ -87,5 +87,26 @@ namespace ComputorV2.IO
 				_ => 2
 			};
 		}
+
+		public void DisplayHeader()
+		{
+			Console.WriteLine();
+			try
+			{
+				string[] lines = File.ReadAllLines("header_banner.txt");
+				foreach (string line in lines)
+				{
+					Console.WriteLine(line);
+				}
+			}
+			catch (FileNotFoundException)
+			{
+				Console.WriteLine("Header banner file not found");
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"Error reading header: {ex.Message}");
+			}
+		}
 	}
 }
