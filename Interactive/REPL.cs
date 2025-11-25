@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using ComputorV2.IO;
 
 namespace ComputorV2.Interactive
@@ -7,6 +8,7 @@ namespace ComputorV2.Interactive
 	public class REPL
 	{
 		private readonly DisplayManager				_displayManager;
+		private readonly HistoryManager				_historyManager;
 		private readonly InputHandler				_inputHandler;
 		private readonly Dictionary<string, object>	_variables;
 		private bool 								_isRunning;
@@ -14,7 +16,8 @@ namespace ComputorV2.Interactive
 		public REPL()
 		{
 			_displayManager = new DisplayManager();
-			_inputHandler = new InputHandler(_displayManager);
+			_historyManager = new HistoryManager();
+			_inputHandler = new InputHandler(_displayManager, _historyManager);
 			_variables = new Dictionary<string, object>();
 			_isRunning = false;
 		}
@@ -43,6 +46,9 @@ namespace ComputorV2.Interactive
 					}
 
 					string result = ProcessCommand(input);
+
+					_historyManager.AddCommand(input);
+
 					if(!string.IsNullOrEmpty(result))
 					{
 						_displayManager.DisplayResult(result);

@@ -1,18 +1,23 @@
 using System;
 using System.Text;
+using ComputorV2.Interactive;
 
 namespace ComputorV2.IO
 {
 	public class InputHandler
 	{
 		private readonly DisplayManager	_displayManager;
+		private readonly HistoryManager	_historyManager;
 		private StringBuilder			_inputBuffer;
 		private int						_cursorPosition;
 		private bool					_isInHistoryMode;
 
-		public InputHandler(DisplayManager displayManager)
+		public bool IsInHistoryMode => _isInHistoryMode;
+
+		public InputHandler(DisplayManager displayManager, HistoryManager historyManager)
 		{
 			_displayManager = displayManager;
+			_historyManager = historyManager;
 			_inputBuffer = new StringBuilder();
 			_cursorPosition = 0;
 			_isInHistoryMode = false;
@@ -82,6 +87,12 @@ namespace ComputorV2.IO
 
 		private void HandleCharacterInput(char character)
 		{
+			if (_isInHistoryMode)
+			{
+				_historyManager.ResetNavigation();
+				_isInHistoryMode = false;
+			}
+
 			if (_cursorPosition >= _inputBuffer.Length)
 			{
 				_inputBuffer.Append(character);
@@ -128,12 +139,29 @@ namespace ComputorV2.IO
 
 		private void HandleUpArrow()
 		{
-			// TODO: Integrate with HistoryManager
+			if (_historyManager.Count == 0) return;
+			
+			_historyManager.MoveToPrevious();
+			string? command = _historyManager.GetCurrentCommand();
+			if (command != null)
+			{
+				SetHistoryContent(command);
+			}
 		}
 
 		private void HandleDownArrow()
 		{
-			// TODO: Integrate with HistoryManager  
+			if (_historyManager.Count == 0) return;
+			
+			_historyManager.MoveToNext();
+			string? command = _historyManager.GetCurrentCommand();
+			if (command != null)
+			{
+				SetHistoryContent(command);
+			} else
+			{
+				ClearBuffer();
+			}
 		}
 
 		private void HandleHome()

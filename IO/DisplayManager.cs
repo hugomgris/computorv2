@@ -101,11 +101,11 @@ namespace ComputorV2.IO
 			}
 			catch (FileNotFoundException)
 			{
-				Console.WriteLine("Header banner file not found");
+				DisplayError("Header banner file not found");
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine($"Error reading header: {ex.Message}");
+				DisplayError($"Error reading header: {ex.Message}");
 			}
 		}
 	}

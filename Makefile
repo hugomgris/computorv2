@@ -11,6 +11,7 @@ RED         = \033[0;91m
 
 NAME        := computorV2
 PROJECT     := computorV2
+TESTS		:= ComputorV2.Tests
 
 # -=-=-=-=-    DOTNET SETTINGS -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
 
@@ -96,11 +97,19 @@ run: $(BUILD_MARKER)
 	@echo "$(CYAN)Running $(NAME)...$(DEF_COLOR)"
 	@$(DOTNET) run $(RUN_FLAGS)
 
+test: all
+	@echo "$(CYAN)Running $(NAME) tests...$(DEF_COLOR)"
+	@$(DOTNET) run --project $(TESTS)
+
 clean:
 	@echo "$(YELLOW)Cleaning build artifacts...$(DEF_COLOR)"
 	@$(DOTNET) clean --verbosity quiet 2>/dev/null || true
 	@$(RM) $(BUILD_DIR) $(OBJ_DIR) $(BUILD_MARKER)
 	@echo "$(RED)Cleaned object files and build artifacts$(DEF_COLOR)"
+	@echo "$(YELLOW)Cleaning test artifacts...$(DEF_COLOR)"
+	@cd ComputorV2.Tests && $(DOTNET) clean --verbosity quiet 2>/dev/null || true
+	@$(RM) ComputorV2.Tests/bin ComputorV2.Tests/obj
+	@echo "$(RED)Cleaned test related files$(DEF_COLOR)"
 
 fclean: clean
 	@$(RM) $(NAME)
