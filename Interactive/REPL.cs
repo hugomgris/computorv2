@@ -20,6 +20,16 @@ namespace ComputorV2.Interactive
 			_inputHandler = new InputHandler(_displayManager, _historyManager);
 			_variables = new Dictionary<string, object>();
 			_isRunning = false;
+
+			try
+			{
+				_historyManager.LoadFromDefaultLocation();
+				Console.WriteLine($"Loaded {_historyManager.Count} commands from history."); // DEBUG
+			}
+			catch (Exception)
+			{
+				Console.WriteLine("Starting with empty history");
+			}
 		}
 
 		public void Run()
@@ -60,7 +70,7 @@ namespace ComputorV2.Interactive
 				}
 			}
 
-			_displayManager.DisplayResult("Goodbye!");
+			Stop();
 		}
 
 		private bool IsExitCommand(string input)
@@ -99,6 +109,8 @@ namespace ComputorV2.Interactive
 		public void Stop()
 		{
 			_isRunning = false;
+			_historyManager.SaveToDefaultLocation();
+			_displayManager.DisplayResult("Goodbye!");
 		}
 	}
 }

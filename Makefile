@@ -97,9 +97,9 @@ run: $(BUILD_MARKER)
 	@echo "$(CYAN)Running $(NAME)...$(DEF_COLOR)"
 	@$(DOTNET) run $(RUN_FLAGS)
 
-test: all
+test:
 	@echo "$(CYAN)Running $(NAME) tests...$(DEF_COLOR)"
-	@$(DOTNET) run --project $(TESTS)
+	@$(DOTNET) test
 
 clean:
 	@echo "$(YELLOW)Cleaning build artifacts...$(DEF_COLOR)"

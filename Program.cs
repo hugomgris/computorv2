@@ -12,8 +12,8 @@
 			
 			Console.CancelKeyPress += (sender, e) =>
 			{
-				e.Cancel = true;
 				repl.Stop();
+				Environment.Exit(0);
 			};
 
 			repl.Run();

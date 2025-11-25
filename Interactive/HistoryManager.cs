@@ -1,3 +1,5 @@
+using System.IO;
+
 namespace ComputorV2.Interactive
 {
 	public class HistoryManager
@@ -32,7 +34,7 @@ namespace ComputorV2.Interactive
 			}
 
 			_history.Add(command);
-			ResetNavigation(); // Reset navigation when new command is added
+			ResetNavigation();
 		}
 
 		public string? GetCommand(int index)
@@ -80,6 +82,100 @@ namespace ComputorV2.Interactive
 		public void ResetNavigation()
 		{
 			_currentIndex = -1;
+		}
+
+		public void SaveToFile(string filePath)
+		{
+			try
+			{
+				var directory = Path.GetDirectoryName(filePath);
+				if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+				{
+					Directory.CreateDirectory(directory);
+				}
+
+				File.WriteAllLines(filePath, _history);
+			}
+			catch (DirectoryNotFoundException)
+			{
+				throw new DirectoryNotFoundException($"Invalid directory path: {Path.GetDirectoryName(filePath)}");
+			}
+			catch (UnauthorizedAccessException)
+			{
+				throw new UnauthorizedAccessException($"No permission to write to: {filePath}");
+			}
+			catch (IOException ex)
+			{
+				throw new IOException($"Failed to save history to {filePath}: {ex.Message}");
+			}
+		}
+
+		public void LoadFromFile(string filePath)
+		{
+			try
+			{
+				if (!File.Exists(filePath))
+				{
+					File.WriteAllText(filePath, "");
+					return;
+				}
+
+				var lines = File.ReadAllLines(filePath);
+				_history.Clear();
+
+				foreach (var line in lines)
+				{
+					var trimmed = line.Trim();
+					if (!string.IsNullOrEmpty(trimmed))
+					{
+						_history.Add(trimmed);
+					}
+				}
+
+				ResetNavigation();
+			}
+			catch (DirectoryNotFoundException)
+			{
+				throw new DirectoryNotFoundException($"Invalid directory path: {Path.GetDirectoryName(filePath)}");
+			}
+			catch (UnauthorizedAccessException)
+			{
+				throw new UnauthorizedAccessException($"No permission to read: {filePath}");
+			}
+			catch (FileNotFoundException)
+			{
+				throw new FileNotFoundException($"History file not found: {filePath}");
+			}
+			catch (IOException ex)
+			{
+				throw new IOException($"Failed to load history from {filePath}: {ex.Message}");
+			}
+		}
+
+		private string GetDefaultHistoryFilePath()
+		{
+			var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+			return Path.Combine(homeDirectory, ".computorv2_history");
+		}
+
+		public void SaveToDefaultLocation()
+		{
+			SaveToFile(GetDefaultHistoryFilePath());
+		}
+
+		public void LoadFromDefaultLocation()
+		{
+			LoadFromFile(GetDefaultHistoryFilePath());
+		}
+
+		public void DeleteHistoryFile()
+		{
+			var filePath = GetDefaultHistoryFilePath();
+			if (!string.IsNullOrEmpty(filePath) && File.Exists(filePath))
+			{
+				File.Delete(filePath);
+				Console.WriteLine($"History file deleted (path: {filePath})");
+			}
 		}
 	}
 }
