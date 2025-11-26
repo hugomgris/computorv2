@@ -1,0 +1,65 @@
+using Xunit;
+using ComputorV2.Interactive;
+using ComputorV2.Core.Math;
+
+namespace ComputorV2.Tests
+{
+	public class MathematicalParserTests
+	{
+		// Naming convention: MethodName_Scenario_ExpectedBehavior
+		[Fact] public void Evaluate_SimpleNumber_ReturnsValue()
+		{
+			var evaluator = new MathEvaluator();
+
+			var result = evaluator.Evaluate("42");
+
+			Assert.Equal(42, result);
+		}
+
+		[Fact] public void Evaluate_SimpleAddition_ReturnSum()
+		{
+			var evaluator = new MathEvaluator();
+
+			var result = evaluator.Evaluate("2 + 3");
+
+			Assert.Equal(5, result);
+		}
+
+		[Fact] public void Evaluate_SimpleSubstraction_ReturnSub()
+		{
+			var evaluator = new MathEvaluator();
+
+			var result = evaluator.Evaluate("3-2");
+
+			Assert.Equal(1, result);
+		}
+
+		[Fact] public void Evaluate_SimpleMultiplication_ReturnMul()
+		{
+			var evaluator = new MathEvaluator();
+
+			var result = evaluator.Evaluate("3    *    2");
+
+			Assert.Equal(6, result);
+		}
+
+		[Fact] public void Evaluate_SimpleDivision_ReturnDiv()
+		{
+			var evaluator = new MathEvaluator();
+
+			var result = evaluator.Evaluate("8    /2");
+
+			Assert.Equal(4, result);
+		}
+
+
+		/* [Fact] public void Evaluate_MixedOperations_RespectsPreced()
+		{
+			var evluator = new MathEvaluator();
+
+			var result = evaluator.Evaluate("2 + 3 * 4");
+
+			Assert.Equal(14, result);
+		} */
+	}
+}

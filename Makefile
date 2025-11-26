@@ -30,28 +30,11 @@ OBJ_DIR     = obj
 CSPROJ      = $(PROJECT).csproj
 SOURCES     = 	Program.cs							\
 				Core/Math/CustomMath.cs				\
-				Core/Math/MatrixOperations.cs		\
-				Core/Math/Operations.cs				\
-				Core/Math/PolynomialSolver.cs		\
-				Core/Parsing/ExpressionEvaluator.cs	\
-				Core/Parsing/Lexer.cs				\
+				Core/Math/MathEvaluator.cs			\
 				Core/Parsing/Parser.cs				\
-				Core/Parsing/SyntaxValidator.cs		\
-				Core/Types/ComplexNumber.cs			\
-				Core/Types/Function.cs				\
-				Core/Types/IRationalNumber.cs		\
-				Core/Types/Matrix.cs				\
 				Core/Types/Polynomial.cs			\
-				Core/Types/RationalNumber.cs		\
-				Core/Types/TypeChecker.cs			\
-				Core/Variables/TypeInference.cs		\
-				Core/Variables/Variable.cs			\
-				Core/Variables/VariableManager.cs	\
-				IO/CommandParser.cs					\
 				IO/DisplayManager.cs				\
 				IO/InputHandler.cs					\
-				IO/OutputFormatter.cs				\
-				Interactive/CommandProcessor.cs		\
 				Interactive/HelpSystem.cs			\
 				Interactive/HistoryManager.cs		\
 				Interactive/REPL.cs					\

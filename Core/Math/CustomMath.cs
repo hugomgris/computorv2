@@ -1,18 +1,18 @@
 using ComputorV2.Core.Types;
 
-namespace Computorv2.Core.Math
+namespace ComputorV2.Core.Math
 {
 	/// <summary>
 	/// Replication of Math.abs and Math.Sqrt because subject reasons
 	/// </summary>
 	public static class CustomMath
 	{
-		public static double ft_Abs(double x)
+		public static double Abs(double x)
 		{
 			return x < 0 ? -x : x;
 		}
 
-		public static double ft_Sqrt(double nb)
+		public static double Sqrt(double nb)
 		{
 			if (nb < 0)
 			{
@@ -25,7 +25,7 @@ namespace Computorv2.Core.Math
 			double guess = nb / 2.0;
 			double prevGuess = 0;
 			
-			while (ft_Abs(guess - prevGuess) > 1e-10)
+			while (Abs(guess - prevGuess) > 1e-10)
 			{
 				prevGuess = guess;
 				guess = (guess + nb / guess) / 2.0;
@@ -34,7 +34,7 @@ namespace Computorv2.Core.Math
 			return guess;
 		}
 
-		public static int ft_Round(double value)
+		public static int Round(double value)
 		{
 			return (int)(value + 0.5);
 		}
@@ -82,11 +82,11 @@ namespace Computorv2.Core.Math
 					double x = xMin + col * xStep;
 					double y = yValues[col];
 
-					bool showCurve = ft_Abs(y - currentY) < (yRange / (height - 1)) / 2;
+					bool showCurve = Abs(y - currentY) < (yRange / (height - 1)) / 2;
 
-					bool isXAxis = ft_Abs(currentY) < (yRange / (height - 1)) / 2;
+					bool isXAxis = Abs(currentY) < (yRange / (height - 1)) / 2;
 
-					bool isYAxis = ft_Abs(x) < xStep / 2;
+					bool isYAxis = Abs(x) < xStep / 2;
 					
 					if (showCurve)
 					{
@@ -172,7 +172,7 @@ namespace Computorv2.Core.Math
 					bool isNewRoot = true;
 					foreach (var existingRoot in roots)
 					{
-						if (ft_Abs(root - existingRoot) < 0.01)
+						if (Abs(root - existingRoot) < 0.01)
 						{
 							isNewRoot = false;
 							break;
@@ -200,7 +200,7 @@ namespace Computorv2.Core.Math
 				double mid = (a + b) / 2.0;
 				double midValue = EvaluatePolynomial(polynomial, mid);
 				
-				if (ft_Abs(midValue) < tolerance || ft_Abs(b - a) < tolerance)
+				if (Abs(midValue) < tolerance || Abs(b - a) < tolerance)
 				{
 					return mid;
 				}

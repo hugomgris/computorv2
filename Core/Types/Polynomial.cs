@@ -1,3 +1,5 @@
+using ComputorV2.Core.Math;
+
 namespace ComputorV2.Core.Types
 {
 	/// <summary>
@@ -27,7 +29,7 @@ namespace ComputorV2.Core.Types
 
 		public int GetDegree()
 		{
-			return _terms.Where(kvp => Math.Abs(kvp.Value) > 1e-10)
+			return _terms.Where(kvp => CustomMath.Abs(kvp.Value) > 1e-10)
 						.Select(kvp => kvp.Key)
 						.DefaultIfEmpty(0)
 						.Max();
@@ -40,7 +42,7 @@ namespace ComputorV2.Core.Types
 
 		public string ToReducedForm()
 		{
-			var sortedTerms = _terms.Where(kvp => Math.Abs(kvp.Value) > 1e-10)
+			var sortedTerms = _terms.Where(kvp => CustomMath.Abs(kvp.Value) > 1e-10)
 									.OrderBy(kvp => kvp.Key)
 									.ToList();
 
