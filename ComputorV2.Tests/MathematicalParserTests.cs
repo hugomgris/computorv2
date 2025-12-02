@@ -53,13 +53,33 @@ namespace ComputorV2.Tests
 		}
 
 
-		/* [Fact] public void Evaluate_MixedOperations_RespectsPreced()
+		[Fact] public void Evaluate_MixedOperations_RespectsPreced()
 		{
-			var evluator = new MathEvaluator();
+			var evaluator = new MathEvaluator();
 
 			var result = evaluator.Evaluate("2 + 3 * 4");
 
 			Assert.Equal(14, result);
-		} */
+		}
+
+		[Fact] public void Evaluate_DecimalNumbers_ReturnsCorrectResult()
+		{
+			var evaluator = new MathEvaluator();
+			var result = evaluator.Evaluate("3.14 + 2.86");
+			Assert.Equal(6.0m, result);
+		}
+
+		[Fact] public void Evaluate_DecimalDivision_ReturnsCorrectResult()
+		{
+			var evaluator = new MathEvaluator();
+			var result = evaluator.Evaluate("7.5 / 2.5");
+			Assert.Equal(3.0m, result);
+		}
+
+		[Fact] public void Evaluate_DivisionByZero_ThrowsException()
+		{
+			var evaluator = new MathEvaluator();
+			Assert.Throws<DivideByZeroException>(() => evaluator.Evaluate("5 / 0"));
+		}
 	}
 }

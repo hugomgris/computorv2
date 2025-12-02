@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using ComputorV2.IO;
+using ComputorV2.Core.Math;
 
 namespace ComputorV2.Interactive
 {
@@ -103,7 +104,10 @@ namespace ComputorV2.Interactive
 				return $"Evaluation detected: {input}";
 			}
 
-			return $"Command processed: {input}";
+			var evaluator = new MathEvaluator();
+			var result = evaluator.Evaluate(input);
+
+			return $"result is:{result}";
 		}
 		
 		public void Stop()

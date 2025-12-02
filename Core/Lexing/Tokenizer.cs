@@ -11,7 +11,7 @@ namespace ComputorV2.Core.Lexing
 
 			foreach (char c in expression)
 			{
-				if (char.IsDigit(c))
+				if (char.IsDigit(c) || c == '.')
 				{
 					currentNumber.Append(c);
 				}
