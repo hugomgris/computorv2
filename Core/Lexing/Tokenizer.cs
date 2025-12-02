@@ -7,37 +7,53 @@ namespace ComputorV2.Core.Lexing
 		public List<string> Tokenize(string expression)
 		{
 			var tokens = new List<string>();
-			var currentNumber = new StringBuilder();
+			var currentToken = new StringBuilder();
 
-			foreach (char c in expression)
+			for (int i = 0; i < expression.Length; i++)
 			{
+				char c = expression[i];
+
 				if (char.IsDigit(c) || c == '.')
 				{
-					currentNumber.Append(c);
+					currentToken.Append(c);
+				}
+				else if (char.IsLetter(c))
+				{
+					currentToken.Append(c);
 				}
 				else if ("+-*/()".Contains(c))
 				{
-					if (currentNumber.Length > 0)
+					if (currentToken.Length > 0)
 					{
-						tokens.Add(currentNumber.ToString());
-						currentNumber.Clear();
+						tokens.Add(currentToken.ToString());
+						currentToken.Clear();
 					}
-
 					tokens.Add(c.ToString());
 				}
 				else if (char.IsWhiteSpace(c))
 				{
-					if (currentNumber.Length > 0)
+					if (currentToken.Length > 0)
 					{
-						tokens.Add(currentNumber.ToString());
-						currentNumber.Clear();
+						tokens.Add(currentToken.ToString());
+						currentToken.Clear();
 					}
+				}
+				else
+				{
+					if (currentToken.Length > 0)
+					{
+						tokens.Add(currentToken.ToString());
+						currentToken.Clear();
+					}
+
+					string invalidChar = c.ToString();
+					throw new ArgumentException($"Invalid character '{invalidChar}' in expression. Variable names must start with a letter and contain only letters and digits.");
 				}
 			}
 
-			if (currentNumber.Length > 0)
+			if (currentToken.Length > 0)
 			{
-				tokens.Add(currentNumber.ToString());
+				tokens.Add(currentToken.ToString());
 			}
 
 			return tokens;

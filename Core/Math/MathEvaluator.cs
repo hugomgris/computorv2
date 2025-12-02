@@ -1,19 +1,43 @@
 using ComputorV2.Core.Lexing;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 
 namespace ComputorV2.Core.Math
 {
+	public record AssignmentInfo(string Variable, decimal Value);
+
 	public class MathEvaluator
 	{
+		private Dictionary<string, decimal> _variables = new Dictionary<string, decimal>();
+		private AssignmentInfo? _lastAssignment = null;
+		
 		public decimal Evaluate(string expression)
 		{
-			var tokenizer = new Tokenizer();
-			var tokens = tokenizer.Tokenize(expression);
+			_lastAssignment = null;
+			
+			if (IsAssignment(expression))
+			{
+				return HandleAssignment(expression);
+			}
+			else if (expression.Contains('=') && !expression.Contains("=="))
+			{
+				throw new ArgumentException($"Invalid assignment: '{expression}'. Variable names must start with a letter.");
+			}
+			else
+			{
+				var resolvedExpression = ResolveVariables(expression);
 
-			var postfix = convertToPostfix(tokens);
+				var tokenizer = new Tokenizer();
+				var tokens = tokenizer.Tokenize(resolvedExpression);
 
-			var result = processPostfix(postfix);
+				var postfix = convertToPostfix(tokens);
 
-			return result;
+				var result = processPostfix(postfix);
+
+				return result;
+			}
 		}
 
 		List<string> convertToPostfix(List<string> tokens)
@@ -129,6 +153,90 @@ namespace ComputorV2.Core.Math
 				"/" => right == 0 ? throw new DivideByZeroException("Division by zero") : left / right,
 				_ => throw new ArgumentException($"Unknown operator: {op}")
 			};
+		}
+
+		public bool IsAssignment(string expression)
+		{
+			if (!expression.Contains('=') || expression.Contains("=="))
+				return false;
+
+			var parts = expression.Split('=');
+			if (parts.Length != 2)
+				return false;
+
+			var leftSide = parts[0].Trim();
+
+			return IsSimpleVariable(leftSide);
+		}
+
+		private bool IsSimpleVariable(string token)
+		{
+			return !string.IsNullOrEmpty(token) &&
+				char.IsLetter(token[0]) &&
+				token.All(c => char.IsLetterOrDigit(c)) &&
+				!token.Any(c => "+-*/^()=".Contains(c)) &&
+				token.Length <= 20;
+		}
+		
+		private decimal HandleAssignment(string expression)
+		{
+			var parts = expression.Split('=');
+			var key = parts[0].Trim();
+			var valueExpression = parts[1].Trim();
+			
+			decimal value;
+			if (decimal.TryParse(valueExpression, out value))
+			{
+				_variables[key] = value;
+			}
+			else
+			{
+				var resolvedExpression = ResolveVariables(valueExpression);
+				value = Evaluate(resolvedExpression);
+				_variables[key] = value;
+			}
+
+			_lastAssignment = new AssignmentInfo(key, value);
+			
+			return value;
+		}
+		
+		public AssignmentInfo? GetLastAssignmentInfo()
+		{
+			return _lastAssignment;
+		}
+		
+		private string ResolveVariables(string expression)
+		{
+			var tokenizer = new Tokenizer();
+			var tokens = tokenizer.Tokenize(expression);
+
+			
+			for (int i = 0; i < tokens.Count; i++)
+			{
+				if (IsVariableToken(tokens[i]))
+				{
+					if (_variables.ContainsKey(tokens[i]))
+					{
+						tokens[i] = _variables[tokens[i]].ToString();
+					}
+					else
+					{
+						throw new InvalidOperationException($"Undefined variable: '{tokens[i]}'. Assign a value to the variable first.");
+					}
+				}
+			}
+			
+			var result = string.Join(" ", tokens);
+			return result;
+		}
+
+		private bool IsVariableToken(string token)
+		{
+			if (string.IsNullOrEmpty(token))
+				return false;
+
+			return char.IsLetter(token[0]) && token.All(c => char.IsLetterOrDigit(c));
 		}
 	}
 }
