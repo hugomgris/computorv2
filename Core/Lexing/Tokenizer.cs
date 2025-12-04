@@ -17,11 +17,29 @@ namespace ComputorV2.Core.Lexing
 				{
 					currentToken.Append(c);
 				}
+				else if (c == '/' && currentToken.Length > 0 && char.IsDigit(currentToken[^1]))
+				{
+					// Handle fractions like "3/4" - keep as single token if followed by digits
+					if (i + 1 < expression.Length && char.IsDigit(expression[i + 1]))
+					{
+						currentToken.Append(c);
+					}
+					else
+					{
+						// It's division operator
+						if (currentToken.Length > 0)
+						{
+							tokens.Add(currentToken.ToString());
+							currentToken.Clear();
+						}
+						tokens.Add(c.ToString());
+					}
+				}
 				else if (char.IsLetter(c))
 				{
 					currentToken.Append(c);
 				}
-				else if ("+-*/()".Contains(c))
+				else if ("+-*/()^=".Contains(c)) // Added ^ and = operators
 				{
 					if (currentToken.Length > 0)
 					{

@@ -12,6 +12,11 @@ namespace ComputorV2.Core.Math
 			return x < 0 ? -x : x;
 		}
 
+		public static long Abs(long x)
+		{
+			return x < 0 ? -x : x;
+		}
+
 		public static double Sqrt(double nb)
 		{
 			if (nb < 0)

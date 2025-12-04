@@ -1,19 +1,22 @@
 using ComputorV2.Core.Lexing;
+using ComputorV2.Core.Types;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
 namespace ComputorV2.Core.Math
 {
-	public record AssignmentInfo(string Variable, decimal Value);
+	public record RationalAssignmentInfo(string Variable, RationalNumber Value);
 
-	public class MathEvaluator
+	/// <summary>
+	/// Enhanced RationalMathEvaluator that uses RationalNumber for precise arithmetic
+	/// </summary>
+	public class RationalMathEvaluator
 	{
-		private Dictionary<string, decimal> _variables = new Dictionary<string, decimal>();
-		private AssignmentInfo? _lastAssignment = null;
+		private Dictionary<string, RationalNumber> _variables = new Dictionary<string, RationalNumber>();
+		private RationalAssignmentInfo? _lastAssignment = null;
 		
-		public decimal Evaluate(string expression)
+		public RationalNumber Evaluate(string expression)
 		{
 			_lastAssignment = null;
 			
@@ -32,15 +35,15 @@ namespace ComputorV2.Core.Math
 				var tokenizer = new Tokenizer();
 				var tokens = tokenizer.Tokenize(resolvedExpression);
 
-				var postfix = convertToPostfix(tokens);
+				var postfix = ConvertToPostfix(tokens);
 
-				var result = processPostfix(postfix);
+				var result = ProcessPostfix(postfix);
 
 				return result;
 			}
 		}
 
-		List<string> convertToPostfix(List<string> tokens)
+		private List<string> ConvertToPostfix(List<string> tokens)
 		{
 			var operators = new Stack<string>();
 			var output = new Queue<string>();
@@ -51,7 +54,7 @@ namespace ComputorV2.Core.Math
 				{
 					output.Enqueue(token);
 				}
-				else if ("+-*/".Contains(token))
+				else if ("+-*/^".Contains(token))
 				{
 					while (operators.Count > 0 &&
 						operators.Peek() != "(" &&
@@ -85,7 +88,8 @@ namespace ComputorV2.Core.Math
 
 		private bool IsNumber(string token)
 		{
-			return decimal.TryParse(token, out _);
+			// Support integers, decimals, and fractions
+			return RationalNumber.TryParse(token, out _);
 		}
 
 		private bool HasHigherOrEqualPrecedence(string A, string B)
@@ -99,28 +103,29 @@ namespace ComputorV2.Core.Math
 			{
 				"+" or "-" => 1,
 				"*" or "/" => 2,
+				"^" => 3,  // Power operator has highest precedence
 				_ => 0
 			};
 		}
 
-		private decimal processPostfix(List<string> tokens)
+		private RationalNumber ProcessPostfix(List<string> tokens)
 		{
-			var stack = new Stack<decimal>();
+			var stack = new Stack<RationalNumber>();
 
 			foreach (var token in tokens)
 			{
 				if (IsNumber(token))
 				{
-					if (decimal.TryParse(token, out decimal number))
+					if (RationalNumber.TryParse(token, out RationalNumber? number))
 					{
-						stack.Push(number);
+						stack.Push(number!);
 					}
 					else
 					{
 						throw new ArgumentException($"Invalid number format: {token}");
 					}
 				}
-				else if ("+-*/".Contains(token))
+				else if ("+-*/^".Contains(token))
 				{
 					if (stack.Count < 2)
 					{
@@ -143,16 +148,30 @@ namespace ComputorV2.Core.Math
 			return stack.Pop();
 		}
 
-		private decimal ApplyOperation(decimal left, decimal right, string op)
+		private RationalNumber ApplyOperation(RationalNumber left, RationalNumber right, string op)
 		{
 			return op switch
 			{
 				"+" => left + right,
 				"-" => left - right,
 				"*" => left * right,
-				"/" => right == 0 ? throw new DivideByZeroException("Division by zero") : left / right,
+				"/" => left / right, // Will throw DivideByZeroException if right is zero
+				"^" => ApplyPowerOperation(left, right),
 				_ => throw new ArgumentException($"Unknown operator: {op}")
 			};
+		}
+
+		private RationalNumber ApplyPowerOperation(RationalNumber baseNumber, RationalNumber exponent)
+		{
+			// For now, only support integer exponents
+			if (!exponent.IsInteger)
+			{
+				throw new ArgumentException("Only integer exponents are currently supported");
+			}
+
+			// Convert to int for power operation
+			int exp = (int)exponent.Numerator;
+			return baseNumber.Power(exp);
 		}
 
 		public bool IsAssignment(string expression)
@@ -178,15 +197,16 @@ namespace ComputorV2.Core.Math
 				token.Length <= 20;
 		}
 		
-		private decimal HandleAssignment(string expression)
+		private RationalNumber HandleAssignment(string expression)
 		{
 			var parts = expression.Split('=');
 			var key = parts[0].Trim();
 			var valueExpression = parts[1].Trim();
 			
-			decimal value;
-			if (decimal.TryParse(valueExpression, out value))
+			RationalNumber value;
+			if (RationalNumber.TryParse(valueExpression, out RationalNumber? parsedValue))
 			{
+				value = parsedValue!;
 				_variables[key] = value;
 			}
 			else
@@ -196,22 +216,21 @@ namespace ComputorV2.Core.Math
 				_variables[key] = value;
 			}
 
-			_lastAssignment = new AssignmentInfo(key, value);
+			_lastAssignment = new RationalAssignmentInfo(key, value);
 			
 			return value;
 		}
 		
-		public AssignmentInfo? GetLastAssignmentInfo()
+		public RationalAssignmentInfo? GetLastRationalAssignmentInfo()
 		{
 			return _lastAssignment;
 		}
-		
+
 		private string ResolveVariables(string expression)
 		{
 			var tokenizer = new Tokenizer();
 			var tokens = tokenizer.Tokenize(expression);
 
-			
 			for (int i = 0; i < tokens.Count; i++)
 			{
 				if (IsVariableToken(tokens[i]))
@@ -237,6 +256,38 @@ namespace ComputorV2.Core.Math
 				return false;
 
 			return char.IsLetter(token[0]) && token.All(c => char.IsLetterOrDigit(c));
+		}
+
+		/// <summary>
+		/// Gets all currently defined variables
+		/// </summary>
+		public Dictionary<string, RationalNumber> GetVariables()
+		{
+			return new Dictionary<string, RationalNumber>(_variables);
+		}
+
+		/// <summary>
+		/// Clears all variables
+		/// </summary>
+		public void ClearVariables()
+		{
+			_variables.Clear();
+		}
+
+		/// <summary>
+		/// Gets a variable's value
+		/// </summary>
+		public RationalNumber? GetVariable(string name)
+		{
+			return _variables.TryGetValue(name, out RationalNumber? value) ? value : null;
+		}
+
+		/// <summary>
+		/// Sets a variable's value
+		/// </summary>
+		public void SetVariable(string name, RationalNumber value)
+		{
+			_variables[name] = value;
 		}
 	}
 }

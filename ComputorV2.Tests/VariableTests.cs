@@ -7,7 +7,7 @@ namespace ComputorV2.Tests
 	{
 		[Fact] public void IsAssignment_SimpleVariable_ReturnsTrue()
 		{
-			var evaluator = new MathEvaluator();
+			var evaluator = new RationalMathEvaluator();
 			
 			string test = "a = 2";
 
@@ -18,7 +18,7 @@ namespace ComputorV2.Tests
 
 		[Fact] public void IsAssignment_PolynomialEquation_ReturnsFalse()
 		{
-			var evaluator = new MathEvaluator();
+			var evaluator = new RationalMathEvaluator();
 			
 			string test = "2x^2 + x + 10 = 0";
 
@@ -29,7 +29,7 @@ namespace ComputorV2.Tests
 		
 		[Fact] public void IsAssignment_ComplexLeftSide_ReturnsFalse()
 		{
-			var evaluator = new MathEvaluator();
+			var evaluator = new RationalMathEvaluator();
 			
 			string test = "A2 + C3 = 10";
 
@@ -41,7 +41,7 @@ namespace ComputorV2.Tests
 		[Fact] 
 		public void Evaluate_SimpleVariableAssignment_StoresValue()
 		{
-			var evaluator = new MathEvaluator();
+			var evaluator = new RationalMathEvaluator();
 			
 			evaluator.Evaluate("a = 5");
 			var result = evaluator.Evaluate("a");
@@ -52,7 +52,7 @@ namespace ComputorV2.Tests
 		[Fact] 
 		public void Evaluate_VariableReassignment_UpdatesValue()
 		{
-			var evaluator = new MathEvaluator();
+			var evaluator = new RationalMathEvaluator();
 			
 			evaluator.Evaluate("a = 5");
 			evaluator.Evaluate("a = 10");
@@ -64,7 +64,7 @@ namespace ComputorV2.Tests
 		[Fact]
 		public void Debug_VariableDictionary_ShowsActualBehavior()
 		{
-			var evaluator = new MathEvaluator();
+			var evaluator = new RationalMathEvaluator();
 			
 			Console.WriteLine("=== STORING ===");
 			evaluator.Evaluate("a = 5");
@@ -78,7 +78,7 @@ namespace ComputorV2.Tests
 		[Fact] 
 		public void Evaluate_AssignmentWithExpression_CalculatesAndStores()
 		{
-			var evaluator = new MathEvaluator();
+			var evaluator = new RationalMathEvaluator();
 			
 			var result = evaluator.Evaluate("a = 2 + 3");
 			
@@ -89,7 +89,7 @@ namespace ComputorV2.Tests
 		[Fact] 
 		public void Evaluate_VariableInExpression_CalculatesCorrectly()
 		{
-			var evaluator = new MathEvaluator();
+			var evaluator = new RationalMathEvaluator();
 			
 			evaluator.Evaluate("a = 5");
 			var result = evaluator.Evaluate("a + 3");
@@ -100,7 +100,7 @@ namespace ComputorV2.Tests
 		[Fact] 
 		public void Evaluate_MultipleVariables_CalculatesCorrectly()
 		{
-			var evaluator = new MathEvaluator();
+			var evaluator = new RationalMathEvaluator();
 			
 			evaluator.Evaluate("a = 5");
 			evaluator.Evaluate("b = 3");
@@ -112,7 +112,7 @@ namespace ComputorV2.Tests
 		[Fact] 
 		public void IsAssignment_InvalidVariableName_ReturnsFalse()
 		{
-			var evaluator = new MathEvaluator();
+			var evaluator = new RationalMathEvaluator();
 			
 			Assert.False(evaluator.IsAssignment("@ = 5"));
 			Assert.False(evaluator.IsAssignment("2x = 5"));
