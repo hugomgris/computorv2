@@ -30,7 +30,8 @@ OBJ_DIR     = obj
 CSPROJ      = $(PROJECT).csproj
 SOURCES     = 	Program.cs							\
 				Core/Math/CustomMath.cs				\
-				Core/Math/MathEvaluator.cs			\
+				Core/Math/RationalMathEvaluator.cs	\
+				Core/Types/RationalNumber.cs		\
 				Core/Parsing/Parser.cs				\
 				Core/Types/Polynomial.cs			\
 				IO/DisplayManager.cs				\
@@ -38,6 +39,7 @@ SOURCES     = 	Program.cs							\
 				Interactive/HelpSystem.cs			\
 				Interactive/HistoryManager.cs		\
 				Interactive/REPL.cs					\
+				Core/Lexing/Tokenizer.cs			\
 
 EXECUTABLE  = $(BUILD_DIR)/Release/net8.0/$(PROJECT)
 DLL_FILE    = $(BUILD_DIR)/Release/net8.0/$(PROJECT).dll

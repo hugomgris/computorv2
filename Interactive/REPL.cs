@@ -11,7 +11,7 @@ namespace ComputorV2.Interactive
 		private readonly DisplayManager				_displayManager;
 		private readonly HistoryManager				_historyManager;
 		private readonly InputHandler				_inputHandler;
-		private readonly Dictionary<string, object>	_variables;
+		private readonly RationalMathEvaluator		_mathEvaluator;
 		private bool 								_isRunning;
 
 		public REPL()
@@ -19,7 +19,7 @@ namespace ComputorV2.Interactive
 			_displayManager = new DisplayManager();
 			_historyManager = new HistoryManager();
 			_inputHandler = new InputHandler(_displayManager, _historyManager);
-			_variables = new Dictionary<string, object>();
+			_mathEvaluator = new RationalMathEvaluator();
 			_isRunning = false;
 
 			try
@@ -87,27 +87,15 @@ namespace ComputorV2.Interactive
 
 		private string ProcessCommand(string input)
 		{
-			// TODO: integrate with CommandProcessor when that's done
-
-			if (input.StartsWith("test"))
+			var result = _mathEvaluator.Evaluate(input);
+			
+			var assignmentInfo = _mathEvaluator.GetLastRationalAssignmentInfo();
+			if (assignmentInfo != null)
 			{
-				return ($"You entered: {input}");
+				return $"Variable '{assignmentInfo.Variable}' assigned: {assignmentInfo.Value}";
 			}
 
-			if (input.Contains("=") && !input.EndsWith("?"))
-			{
-				return $"Assignment detected: {input}";
-			}
-
-			if (input.EndsWith("?"))
-			{
-				return $"Evaluation detected: {input}";
-			}
-
-			var evaluator = new MathEvaluator();
-			var result = evaluator.Evaluate(input);
-
-			return $"result is:{result}";
+			return $"{result}";
 		}
 		
 		public void Stop()
