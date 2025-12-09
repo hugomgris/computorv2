@@ -3,7 +3,7 @@ using ComputorV2.Core.Math;
 
 namespace ComputorV2.Core.Types
 {
-	public class ComplexNumber: IComplexNumber
+	public class ComplexNumber: MathValue, IComplexNumber, IEquatable<ComplexNumber>
 	{
 		private readonly RationalNumber _real;
 		private readonly RationalNumber _imaginary;
@@ -13,7 +13,8 @@ namespace ComputorV2.Core.Types
         public RationalNumber Real => _real;
         public RationalNumber Imaginary => _imaginary;
         
-        public bool IsReal => _imaginary == RationalNumber.Zero;
+        public override bool IsReal => _imaginary == RationalNumber.Zero;
+        public override bool IsZero => _real == RationalNumber.Zero && _imaginary == RationalNumber.Zero;
         public bool IsImaginary => _real == RationalNumber.Zero;
 
 		public double Magnitude
@@ -200,11 +201,11 @@ namespace ComputorV2.Core.Types
 			return new ComplexNumber(_real / denominator, -_imaginary / denominator);
 		}
 
-		public ComplexNumber Power(int exponent)
+		public virtual ComplexNumber PowerComplex(int exponent)
 		{
 			if (exponent == 0) return new ComplexNumber(RationalNumber.One, RationalNumber.Zero);
 			if (exponent == 1) return this;
-			if (exponent < 0) return Power(-exponent).Reciprocal();
+			if (exponent < 0) return PowerComplex(-exponent).Reciprocal();
 			
 			ComplexNumber result = this;
 			for (int i = 1; i < exponent; i++)
@@ -233,6 +234,12 @@ namespace ComputorV2.Core.Types
 		{
 			if (other is not ComplexNumber otherComplex) return false;
 			return this == otherComplex;
+		}
+
+		public bool Equals(ComplexNumber? other)
+		{
+			if (other is null) return false;
+			return this == other;
 		}
 
 		public override bool Equals(object? obj)
@@ -264,6 +271,80 @@ namespace ComputorV2.Core.Types
 		public static implicit operator ComplexNumber(int value) 
 			=> new ComplexNumber(new RationalNumber(value));
 		
+		#endregion
+
+		#region MathValue Implementation
+
+		public override MathValue Add(MathValue other)
+		{
+			return other switch
+			{
+				RationalNumber r => this + new ComplexNumber(r),
+				ComplexNumber c => this + c,
+				_ => throw new ArgumentException($"Cannot add {GetType().Name} and {other.GetType().Name}")
+			};
+		}
+
+		public override MathValue Subtract(MathValue other)
+		{
+			return other switch
+			{
+				RationalNumber r => this - new ComplexNumber(r),
+				ComplexNumber c => this - c,
+				_ => throw new ArgumentException($"Cannot subtract {GetType().Name} and {other.GetType().Name}")
+			};
+		}
+
+		public override MathValue Multiply(MathValue other)
+		{
+			return other switch
+			{
+				RationalNumber r => this * new ComplexNumber(r),
+				ComplexNumber c => this * c,
+				_ => throw new ArgumentException($"Cannot multiply {GetType().Name} and {other.GetType().Name}")
+			};
+		}
+
+		public override MathValue Divide(MathValue other)
+		{
+			return other switch
+			{
+				RationalNumber r => this / new ComplexNumber(r),
+				ComplexNumber c => this / c,
+				_ => throw new ArgumentException($"Cannot divide {GetType().Name} and {other.GetType().Name}")
+			};
+		}
+
+		public override MathValue Power(int exponent) => PowerComplex(exponent);
+		public override MathValue Negate() => -this;
+
+		public override RationalNumber? AsRational() => IsReal ? _real : null;
+		public override ComplexNumber AsComplex() => this;
+
+		public override bool Equals(MathValue? other) => other is ComplexNumber c && this.Equals(c);
+
+		public static bool TryParse(string value, out ComplexNumber? result)
+		{
+			try
+			{
+				// Only parse as complex if it contains 'i' or is complex notation
+				value = value.Trim().Replace(" ", "").ToLower();
+				if (!value.Contains('i'))
+				{
+					result = null;
+					return false;
+				}
+				
+				result = new ComplexNumber(value);
+				return true;
+			}
+			catch
+			{
+				result = null;
+				return false;
+			}
+		}
+
 		#endregion
 	}
 }

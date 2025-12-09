@@ -8,6 +8,13 @@
 	{
 		static void Main(string[] args)
 		{
+			// For testing purposes, run tests before starting REPL
+			if (args.Length > 0 && args[0] == "--test")
+			{
+				TestUnifiedSystem.RunTests();
+				return;
+			}
+			
 			var repl = new REPL();
 			
 			Console.CancelKeyPress += (sender, e) =>

@@ -11,7 +11,7 @@ namespace ComputorV2.Interactive
 		private readonly DisplayManager				_displayManager;
 		private readonly HistoryManager				_historyManager;
 		private readonly InputHandler				_inputHandler;
-		private readonly RationalMathEvaluator		_mathEvaluator;
+		private readonly MathEvaluator				_mathEvaluator;
 		private bool 								_isRunning;
 
 		public REPL()
@@ -19,7 +19,7 @@ namespace ComputorV2.Interactive
 			_displayManager = new DisplayManager();
 			_historyManager = new HistoryManager();
 			_inputHandler = new InputHandler(_displayManager, _historyManager);
-			_mathEvaluator = new RationalMathEvaluator();
+			_mathEvaluator = new MathEvaluator();
 			_isRunning = false;
 
 			try
@@ -89,7 +89,7 @@ namespace ComputorV2.Interactive
 		{
 			var result = _mathEvaluator.Evaluate(input);
 			
-			var assignmentInfo = _mathEvaluator.GetLastRationalAssignmentInfo();
+			var assignmentInfo = _mathEvaluator.GetLastAssignmentInfo();
 			if (assignmentInfo != null)
 			{
 				return $"Variable '{assignmentInfo.Variable}' assigned: {assignmentInfo.Value}";

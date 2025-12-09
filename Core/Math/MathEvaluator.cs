@@ -6,14 +6,14 @@ using System.Linq;
 
 namespace ComputorV2.Core.Math
 {
-	public record RationalAssignmentInfo(string Variable, RationalNumber Value);
+	public record AssignmentInfo(string Variable, MathValue Value);
 
-	public class RationalMathEvaluator
+	public class MathEvaluator
 	{
-		private Dictionary<string, RationalNumber> _variables = new Dictionary<string, RationalNumber>();
-		private RationalAssignmentInfo? _lastAssignment = null;
+		private Dictionary<string, MathValue> _variables = new();
+		private AssignmentInfo? _lastAssignment = null;
 		
-		public RationalNumber Evaluate(string expression)
+		public MathValue Evaluate(string expression)
 		{
 			_lastAssignment = null;
 			
@@ -85,7 +85,8 @@ namespace ComputorV2.Core.Math
 
 		private bool IsNumber(string token)
 		{
-			return RationalNumber.TryParse(token, out _);
+			return RationalNumber.TryParse(token, out _) || 
+				ComplexNumber.TryParse(token, out _);
 		}
 
 		private bool HasHigherOrEqualPrecedence(string A, string B)
@@ -104,17 +105,21 @@ namespace ComputorV2.Core.Math
 			};
 		}
 
-		private RationalNumber ProcessPostfix(List<string> tokens)
+		private MathValue ProcessPostfix(List<string> tokens)
 		{
-			var stack = new Stack<RationalNumber>();
+			var stack = new Stack<MathValue>();
 
 			foreach (var token in tokens)
 			{
 				if (IsNumber(token))
 				{
-					if (RationalNumber.TryParse(token, out RationalNumber? number))
+					if (RationalNumber.TryParse(token, out RationalNumber? rational))
 					{
-						stack.Push(number!);
+						stack.Push(rational!);
+					}
+					else if (ComplexNumber.TryParse(token, out ComplexNumber? complex))
+					{
+						stack.Push(complex!);
 					}
 					else
 					{
@@ -124,48 +129,44 @@ namespace ComputorV2.Core.Math
 				else if ("+-*/^".Contains(token))
 				{
 					if (stack.Count < 2)
-					{
 						throw new InvalidOperationException($"Insufficient operands for operator: {token}");
-					}
 					
 					var right = stack.Pop();
 					var left = stack.Pop();
-					
 					var result = ApplyOperation(left, right, token);
 					stack.Push(result);
 				}
 			}
 
 			if (stack.Count != 1)
-			{
 				throw new InvalidOperationException("Invalid expression: expected single result");
-			}
 
 			return stack.Pop();
 		}
 
-		private RationalNumber ApplyOperation(RationalNumber left, RationalNumber right, string op)
+		private MathValue ApplyOperation(MathValue left, MathValue right, string op)
 		{
 			return op switch
 			{
-				"+" => left + right,
-				"-" => left - right,
-				"*" => left * right,
-				"/" => left / right,
+				"+" => left.Add(right),
+				"-" => left.Subtract(right),
+				"*" => left.Multiply(right),
+				"/" => left.Divide(right),
 				"^" => ApplyPowerOperation(left, right),
 				_ => throw new ArgumentException($"Unknown operator: {op}")
 			};
 		}
 
-		private RationalNumber ApplyPowerOperation(RationalNumber baseNumber, RationalNumber exponent)
+		private MathValue ApplyPowerOperation(MathValue baseValue, MathValue exponent)
 		{
-			if (!exponent.IsInteger)
+			var rationalExp = exponent.AsRational();
+			if (rationalExp == null || !rationalExp.IsInteger)
 			{
 				throw new ArgumentException("Only integer exponents are currently supported");
 			}
 
-			int exp = (int)exponent.Numerator;
-			return baseNumber.Power(exp);
+			int exp = (int)rationalExp.Numerator;
+			return baseValue.Power(exp);
 		}
 
 		public bool IsAssignment(string expression)
@@ -191,16 +192,21 @@ namespace ComputorV2.Core.Math
 				token.Length <= 20;
 		}
 		
-		private RationalNumber HandleAssignment(string expression)
+		private MathValue HandleAssignment(string expression)
 		{
 			var parts = expression.Split('=');
 			var key = parts[0].Trim();
 			var valueExpression = parts[1].Trim();
 			
-			RationalNumber value;
-			if (RationalNumber.TryParse(valueExpression, out RationalNumber? parsedValue))
+			MathValue value;
+			if (RationalNumber.TryParse(valueExpression, out RationalNumber? parsedRational))
 			{
-				value = parsedValue!;
+				value = parsedRational!;
+				_variables[key] = value;
+			}
+			else if (ComplexNumber.TryParse(valueExpression, out ComplexNumber? parsedComplex))
+			{
+				value = parsedComplex!;
 				_variables[key] = value;
 			}
 			else
@@ -210,12 +216,12 @@ namespace ComputorV2.Core.Math
 				_variables[key] = value;
 			}
 
-			_lastAssignment = new RationalAssignmentInfo(key, value);
+			_lastAssignment = new AssignmentInfo(key, value);
 			
 			return value;
 		}
 		
-		public RationalAssignmentInfo? GetLastRationalAssignmentInfo()
+		public AssignmentInfo? GetLastAssignmentInfo()
 		{
 			return _lastAssignment;
 		}
@@ -252,9 +258,9 @@ namespace ComputorV2.Core.Math
 			return char.IsLetter(token[0]) && token.All(c => char.IsLetterOrDigit(c));
 		}
 
-		public Dictionary<string, RationalNumber> GetVariables()
+		public Dictionary<string, MathValue> GetVariables()
 		{
-			return new Dictionary<string, RationalNumber>(_variables);
+			return new Dictionary<string, MathValue>(_variables);
 		}
 
 		public void ClearVariables()
@@ -262,12 +268,12 @@ namespace ComputorV2.Core.Math
 			_variables.Clear();
 		}
 
-		public RationalNumber? GetVariable(string name)
+		public MathValue? GetVariable(string name)
 		{
-			return _variables.TryGetValue(name, out RationalNumber? value) ? value : null;
+			return _variables.TryGetValue(name, out MathValue? value) ? value : null;
 		}
 
-		public void SetVariable(string name, RationalNumber value)
+		public void SetVariable(string name, MathValue value)
 		{
 			_variables[name] = value;
 		}
