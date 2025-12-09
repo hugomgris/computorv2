@@ -20,7 +20,7 @@ namespace ComputorV2.Core.Lexing
 				else if (c == '/' && currentToken.Length > 0 && char.IsDigit(currentToken[^1]))
 				{
 					// Handle fractions like "3/4" - keep as single token if followed by digits
-					if (i + 1 < expression.Length && char.IsDigit(expression[i + 1]))
+					if (i + 1 < expression.Length && LooksLikeFractionDenominator(expression, i + 1))
 					{
 						currentToken.Append(c);
 					}
@@ -75,6 +75,18 @@ namespace ComputorV2.Core.Lexing
 			}
 
 			return tokens;
+		}
+
+		private bool LooksLikeFractionDenominator(string expr, int startIndex)
+		{
+			for (int i = startIndex; i < expr.Length; i++)
+			{
+				char c = expr[i];
+				if (char.IsDigit(c) || c == '.') continue;
+				if (char.IsWhiteSpace(c) || "+-*/()^=".Contains(c)) break;
+				return false;
+			}
+			return true;
 		}
 	}
 }

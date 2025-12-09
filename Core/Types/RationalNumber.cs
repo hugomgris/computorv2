@@ -3,10 +3,6 @@ using ComputorV2.Core.Math;
 
 namespace ComputorV2.Core.Types
 {
-    /// <summary>
-    /// Represents a rational number (fraction) with arbitrary precision
-    /// Automatically simplifies fractions to lowest terms
-    /// </summary>
     public class RationalNumber : IRationalNumber
     {
         private readonly long _numerator;
@@ -14,11 +10,6 @@ namespace ComputorV2.Core.Types
 
         #region Constructors
 
-        /// <summary>
-        /// Creates a rational number from numerator and denominator
-        /// </summary>
-        /// <param name="numerator">The numerator</param>
-        /// <param name="denominator">The denominator (must not be zero)</param>
         public RationalNumber(long numerator, long denominator = 1)
         {
             if (denominator == 0)
@@ -37,10 +28,6 @@ namespace ComputorV2.Core.Types
             _denominator = denominator / gcd;
         }
 
-        /// <summary>
-        /// Creates a rational number from a decimal value
-        /// </summary>
-        /// <param name="value">The decimal value to convert</param>
         public RationalNumber(decimal value)
         {
             if (value == 0)
@@ -100,22 +87,10 @@ namespace ComputorV2.Core.Types
 
         #region Static Factory Methods
 
-        /// <summary>
-        /// Creates a RationalNumber representing zero
-        /// </summary>
         public static RationalNumber Zero => new RationalNumber(0, 1);
 
-        /// <summary>
-        /// Creates a RationalNumber representing one
-        /// </summary>
         public static RationalNumber One => new RationalNumber(1, 1);
 
-        /// <summary>
-        /// Parses a string representation of a rational number
-        /// Supports formats: "3", "3/4", "-7/2", "2.5"
-        /// </summary>
-        /// <param name="str">String to parse</param>
-        /// <returns>Parsed RationalNumber</returns>
         public static RationalNumber Parse(string str)
         {
             if (string.IsNullOrWhiteSpace(str))
@@ -131,8 +106,22 @@ namespace ComputorV2.Core.Types
                     throw new ArgumentException($"Invalid fraction format: {str}", nameof(str));
 
                 long numerator = long.Parse(parts[0].Trim());
+
+                string denomStr = parts[1].Trim();
+                if (denomStr.Contains('.'))
+                {
+                    var denominatorRational = new RationalNumber(decimal.Parse(denomStr));
+                    return new RationalNumber(numerator) / denominatorRational;
+                }
+                else
+                {
+                    long denominator = long.Parse(denomStr);
+                    return new RationalNumber(numerator, denominator);
+                }
+                
+                /* long numerator = long.Parse(parts[0].Trim());
                 long denominator = long.Parse(parts[1].Trim());
-                return new RationalNumber(numerator, denominator);
+                return new RationalNumber(numerator, denominator); */
             }
 
             // Check if it's a decimal
@@ -147,12 +136,6 @@ namespace ComputorV2.Core.Types
             return new RationalNumber(intValue);
         }
 
-        /// <summary>
-        /// Tries to parse a string representation of a rational number
-        /// </summary>
-        /// <param name="str">String to parse</param>
-        /// <param name="result">Parsed RationalNumber if successful</param>
-        /// <returns>True if parsing succeeded</returns>
         public static bool TryParse(string str, out RationalNumber? result)
         {
             result = null;
@@ -207,9 +190,6 @@ namespace ComputorV2.Core.Types
             return new RationalNumber(-a._numerator, a._denominator);
         }
 
-        /// <summary>
-        /// Raises the rational number to an integer power
-        /// </summary>
         public RationalNumber Power(int exponent)
         {
             if (exponent == 0)
@@ -331,9 +311,6 @@ namespace ComputorV2.Core.Types
             return $"{_numerator}/{_denominator}";
         }
 
-        /// <summary>
-        /// Returns a decimal representation for display purposes
-        /// </summary>
         public string ToDecimalString()
         {
             return ToDecimal().ToString("0.##########");
@@ -343,9 +320,6 @@ namespace ComputorV2.Core.Types
 
         #region Helper Methods
 
-        /// <summary>
-        /// Calculates the Greatest Common Divisor using Euclidean algorithm
-        /// </summary>
         private static long GreatestCommonDivisor(long a, long b)
         {
             while (b != 0)
@@ -357,9 +331,6 @@ namespace ComputorV2.Core.Types
             return a;
         }
 
-        /// <summary>
-        /// Calculates the Least Common Multiple
-        /// </summary>
         private static long LeastCommonMultiple(long a, long b)
         {
             return (a * b) / GreatestCommonDivisor(a, b);
@@ -369,33 +340,21 @@ namespace ComputorV2.Core.Types
 
         #region Implicit Conversions
 
-        /// <summary>
-        /// Implicit conversion from integer to RationalNumber
-        /// </summary>
         public static implicit operator RationalNumber(int value)
         {
             return new RationalNumber(value);
         }
 
-        /// <summary>
-        /// Implicit conversion from long to RationalNumber
-        /// </summary>
         public static implicit operator RationalNumber(long value)
         {
             return new RationalNumber(value);
         }
 
-        /// <summary>
-        /// Explicit conversion from decimal to RationalNumber
-        /// </summary>
         public static explicit operator RationalNumber(decimal value)
         {
             return new RationalNumber(value);
         }
 
-        /// <summary>
-        /// Explicit conversion from RationalNumber to decimal
-        /// </summary>
         public static explicit operator decimal(RationalNumber rational)
         {
             return rational.ToDecimal();

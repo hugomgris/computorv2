@@ -8,9 +8,6 @@ namespace ComputorV2.Core.Math
 {
 	public record RationalAssignmentInfo(string Variable, RationalNumber Value);
 
-	/// <summary>
-	/// Enhanced RationalMathEvaluator that uses RationalNumber for precise arithmetic
-	/// </summary>
 	public class RationalMathEvaluator
 	{
 		private Dictionary<string, RationalNumber> _variables = new Dictionary<string, RationalNumber>();
@@ -88,7 +85,6 @@ namespace ComputorV2.Core.Math
 
 		private bool IsNumber(string token)
 		{
-			// Support integers, decimals, and fractions
 			return RationalNumber.TryParse(token, out _);
 		}
 
@@ -103,7 +99,7 @@ namespace ComputorV2.Core.Math
 			{
 				"+" or "-" => 1,
 				"*" or "/" => 2,
-				"^" => 3,  // Power operator has highest precedence
+				"^" => 3,
 				_ => 0
 			};
 		}
@@ -155,7 +151,7 @@ namespace ComputorV2.Core.Math
 				"+" => left + right,
 				"-" => left - right,
 				"*" => left * right,
-				"/" => left / right, // Will throw DivideByZeroException if right is zero
+				"/" => left / right,
 				"^" => ApplyPowerOperation(left, right),
 				_ => throw new ArgumentException($"Unknown operator: {op}")
 			};
@@ -163,13 +159,11 @@ namespace ComputorV2.Core.Math
 
 		private RationalNumber ApplyPowerOperation(RationalNumber baseNumber, RationalNumber exponent)
 		{
-			// For now, only support integer exponents
 			if (!exponent.IsInteger)
 			{
 				throw new ArgumentException("Only integer exponents are currently supported");
 			}
 
-			// Convert to int for power operation
 			int exp = (int)exponent.Numerator;
 			return baseNumber.Power(exp);
 		}
@@ -258,33 +252,21 @@ namespace ComputorV2.Core.Math
 			return char.IsLetter(token[0]) && token.All(c => char.IsLetterOrDigit(c));
 		}
 
-		/// <summary>
-		/// Gets all currently defined variables
-		/// </summary>
 		public Dictionary<string, RationalNumber> GetVariables()
 		{
 			return new Dictionary<string, RationalNumber>(_variables);
 		}
 
-		/// <summary>
-		/// Clears all variables
-		/// </summary>
 		public void ClearVariables()
 		{
 			_variables.Clear();
 		}
 
-		/// <summary>
-		/// Gets a variable's value
-		/// </summary>
 		public RationalNumber? GetVariable(string name)
 		{
 			return _variables.TryGetValue(name, out RationalNumber? value) ? value : null;
 		}
 
-		/// <summary>
-		/// Sets a variable's value
-		/// </summary>
 		public void SetVariable(string name, RationalNumber value)
 		{
 			_variables[name] = value;
