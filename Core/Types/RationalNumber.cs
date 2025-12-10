@@ -15,14 +15,12 @@ namespace ComputorV2.Core.Types
 			if (denominator == 0)
 				throw new ArgumentException("Denominator cannot be zero", nameof(denominator));
 
-			// Handle negative denominators by moving sign to numerator
 			if (denominator < 0)
 			{
 				numerator = -numerator;
 				denominator = -denominator;
 			}
 
-			// Simplify the fraction
 			long gcd = GreatestCommonDivisor(CustomMath.Abs(numerator), denominator);
 			_numerator = numerator / gcd;
 			_denominator = denominator / gcd;
@@ -37,13 +35,10 @@ namespace ComputorV2.Core.Types
 				return;
 			}
 
-			// Convert decimal to fraction
-			// Handle the decimal places by finding appropriate denominator
 			string valueStr = value.ToString("0.#############################");
 			
 			if (!valueStr.Contains('.'))
 			{
-				// It's a whole number
 				_numerator = (long)value;
 				_denominator = 1;
 				return;
@@ -61,13 +56,11 @@ namespace ComputorV2.Core.Types
 			
 			long numerator = wholePart * denominator + long.Parse(fractionalPart);
 			
-			// Handle negative values
 			if (value < 0 && wholePart == 0)
 			{
 				numerator = -numerator;
 			}
 
-			// Simplify
 			long gcd = GreatestCommonDivisor(CustomMath.Abs(numerator), denominator);
 			_numerator = numerator / gcd;
 			_denominator = denominator / gcd;
@@ -98,7 +91,6 @@ namespace ComputorV2.Core.Types
 
 			str = str.Trim();
 
-			// Check if it contains a fraction
 			if (str.Contains('/'))
 			{
 				string[] parts = str.Split('/');
@@ -118,20 +110,14 @@ namespace ComputorV2.Core.Types
 					long denominator = long.Parse(denomStr);
 					return new RationalNumber(numerator, denominator);
 				}
-				
-				/* long numerator = long.Parse(parts[0].Trim());
-				long denominator = long.Parse(parts[1].Trim());
-				return new RationalNumber(numerator, denominator); */
 			}
 
-			// Check if it's a decimal
 			if (str.Contains('.'))
 			{
 				decimal value = decimal.Parse(str);
 				return new RationalNumber(value);
 			}
 
-			// It's a whole number
 			long intValue = long.Parse(str);
 			return new RationalNumber(intValue);
 		}
@@ -200,7 +186,6 @@ namespace ComputorV2.Core.Types
 				if (IsZero)
 					throw new DivideByZeroException("Cannot raise zero to negative power");
 				
-				// For negative exponent, flip the fraction and use positive exponent
 				return new RationalNumber(_denominator, _numerator).Power(-exponent);
 			}
 
@@ -263,7 +248,6 @@ namespace ComputorV2.Core.Types
 
 		public IRationalNumber Simplify()
 		{
-			// Already simplified in constructor
 			return this;
 		}
 

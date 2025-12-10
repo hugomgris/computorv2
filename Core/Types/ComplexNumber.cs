@@ -255,10 +255,22 @@ namespace ComputorV2.Core.Types
 		public override string ToString()
 		{
 			if (IsReal) return _real.ToString();
-			if (IsImaginary) return $"{_imaginary}i";
+			if (IsImaginary) 
+			{
+				if (_imaginary == RationalNumber.One) return "i";
+				if (_imaginary == -RationalNumber.One) return "-i";
+				return $"{_imaginary}i";
+			}
 			
-			string imaginaryPart = _imaginary >= RationalNumber.Zero ? 
-				$" + {_imaginary}i" : $" - {(-_imaginary)}i";
+			string imaginaryPart;
+			if (_imaginary == RationalNumber.One)
+				imaginaryPart = " + i";
+			else if (_imaginary == -RationalNumber.One)
+				imaginaryPart = " - i";
+			else
+				imaginaryPart = _imaginary >= RationalNumber.Zero ? 
+					$" + {_imaginary}i" : $" - {(-_imaginary)}i";
+			
 			return $"{_real}{imaginaryPart}";
 		}
 

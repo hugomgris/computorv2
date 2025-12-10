@@ -30,10 +30,16 @@ OBJ_DIR     = obj
 CSPROJ      = $(PROJECT).csproj
 SOURCES     = 	Program.cs							\
 				Core/Math/CustomMath.cs				\
-				Core/Math/MathEvaluator.cs	\
-				Core/Types/RationalNumber.cs		\
+				Core/Math/MathEvaluator.cs			\
 				Core/Parsing/Parser.cs				\
+				Core/Types/MathValue.cs				\
+				Core/Types/IRationalNumber.cs		\
+				Core/Types/RationalNumber.cs		\
+				Core/Types/IComplexNumber.cs		\
+				Core/Types/ComplexNumber.cs			\
 				Core/Types/Polynomial.cs			\
+				Core/Types/IMatrix.cs				\
+				Core/Types/Matrix.cs				\
 				IO/DisplayManager.cs				\
 				IO/InputHandler.cs					\
 				Interactive/HelpSystem.cs			\
