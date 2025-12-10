@@ -181,5 +181,59 @@ namespace ComputorV2.Tests.Core.Types
 			Assert.Equal("-2", terms[1].ToString()); // x coefficient  
 			Assert.Equal("1", terms[2].ToString()); // x^2 coefficient
 		}
+
+		[Fact]
+		public void Constructor_ParsesSimpleLinear()
+		{
+			var poly = new Polynomial("2x + 3");
+			
+			Assert.Equal("2 * X + 3", poly.ToString());
+			Assert.Equal(1, poly.Degree);
+		}
+
+		[Fact]
+		public void Constructor_ParsesQuadratic()
+		{
+			var poly = new Polynomial("x^2 - 2x + 1");
+			
+			Assert.Equal("X^2 - 2 * X + 1", poly.ToString());
+			Assert.Equal(2, poly.Degree);
+		}
+
+		[Fact]
+		public void Constructor_ParsesQuadraticWithSpaces()
+		{
+			var poly = new Polynomial("x^2 + 3*x - 4");
+			
+			Assert.Equal("X^2 + 3 * X - 4", poly.ToString());
+			Assert.Equal(2, poly.Degree);
+		}
+
+		[Fact]
+		public void Constructor_ParsesConstant()
+		{
+			var poly = new Polynomial("42");
+			
+			Assert.Equal("42", poly.ToString());
+			Assert.Equal(0, poly.Degree);
+		}
+
+		[Fact]
+		public void Constructor_ParsesLinearWithoutConstant()
+		{
+			var poly = new Polynomial("3x");
+			
+			Assert.Equal("3 * X", poly.ToString());
+			Assert.Equal(1, poly.Degree);
+		}
+
+		[Fact]
+		public void Constructor_ParsesNegativeCoefficients()
+		{
+			var poly = new Polynomial("-2x^2 - 5x - 1");
+			
+			Assert.Equal("-2 * X^2 - 5 * X - 1", poly.ToString());
+			Assert.Equal(2, poly.Degree);
+		}
 	}
 }

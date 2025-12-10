@@ -25,7 +25,7 @@ namespace ComputorV2.Core.Types
 		public Polynomial(string expression)
 		{
 			_terms = new Dictionary<int, MathValue>();
-			throw new NotImplementedException("String parsing will be implemented next");
+			ParseExpression(expression.Trim());
 		}
 
 		public Polynomial(MathValue constant)
@@ -525,6 +525,171 @@ namespace ComputorV2.Core.Types
 				return _terms[0].AsComplex();
 			}
 			return null;
+		}
+
+		#endregion
+
+		#region String Parsing
+
+		/// <summary>
+		/// Parse a polynomial expression string like "x^2 + 2*x + 1" or "2x + 3"
+		/// </summary>
+		private void ParseExpression(string expression)
+		{
+			if (string.IsNullOrWhiteSpace(expression))
+			{
+				return; // Empty polynomial
+			}
+
+			// Normalize the expression
+			expression = NormalizeExpression(expression);
+			
+			// Split by + and - while preserving the operators
+			var terms = SplitIntoTerms(expression);
+			
+			foreach (var term in terms)
+			{
+				if (string.IsNullOrWhiteSpace(term)) continue;
+				ParseTerm(term.Trim());
+			}
+		}
+
+		/// <summary>
+		/// Normalize expression: add spaces, handle implicit multiplication, etc.
+		/// </summary>
+		private string NormalizeExpression(string expression)
+		{
+			// Replace common patterns
+			expression = System.Text.RegularExpressions.Regex.Replace(expression, @"(\d)([a-zA-Z])", "$1*$2"); // 2x -> 2*x
+			expression = System.Text.RegularExpressions.Regex.Replace(expression, @"([a-zA-Z])(\d)", "$1*$2"); // x2 -> x*2
+			expression = System.Text.RegularExpressions.Regex.Replace(expression, @"([a-zA-Z])\^", "$1^"); // Remove space before ^
+			expression = expression.Replace(" ", ""); // Remove all spaces for easier parsing
+			
+			// Ensure we have + at the beginning if no sign
+			if (!expression.StartsWith("+") && !expression.StartsWith("-"))
+			{
+				expression = "+" + expression;
+			}
+			
+			return expression;
+		}
+
+		/// <summary>
+		/// Split expression into individual terms while preserving signs
+		/// </summary>
+		private List<string> SplitIntoTerms(string expression)
+		{
+			var terms = new List<string>();
+			var currentTerm = new StringBuilder();
+			bool isFirst = true;
+			
+			for (int i = 0; i < expression.Length; i++)
+			{
+				char c = expression[i];
+				
+				if ((c == '+' || c == '-') && !isFirst)
+				{
+					// Save current term and start new one
+					if (currentTerm.Length > 0)
+					{
+						terms.Add(currentTerm.ToString());
+						currentTerm.Clear();
+					}
+				}
+				
+				currentTerm.Append(c);
+				isFirst = false;
+			}
+			
+			// Add the last term
+			if (currentTerm.Length > 0)
+			{
+				terms.Add(currentTerm.ToString());
+			}
+			
+			return terms;
+		}
+
+		/// <summary>
+		/// Parse a single term like "+2*x^2" or "-3x" or "+5"
+		/// </summary>
+		private void ParseTerm(string term)
+		{
+			if (string.IsNullOrWhiteSpace(term)) return;
+			
+			// Handle sign
+			bool isNegative = term.StartsWith("-");
+			if (term.StartsWith("+") || term.StartsWith("-"))
+			{
+				term = term.Substring(1);
+			}
+			
+			// Default values
+			MathValue coefficient = new RationalNumber(1);
+			int power = 0;
+			
+			// Check if term contains variable
+			if (term.Contains("x") || term.Contains("X"))
+			{
+				// Parse coefficient and power
+				var parts = term.Split(new char[] { 'x', 'X' }, StringSplitOptions.RemoveEmptyEntries);
+				
+				// Handle coefficient
+				if (parts.Length == 0 || string.IsNullOrEmpty(parts[0]))
+				{
+					// Just "x" or "X"
+					coefficient = new RationalNumber(1);
+					power = 1;
+				}
+				else
+				{
+					// Coefficient exists
+					var coeffPart = parts[0].Replace("*", "");
+					if (string.IsNullOrEmpty(coeffPart))
+					{
+						coefficient = new RationalNumber(1);
+					}
+					else
+					{
+						if (RationalNumber.TryParse(coeffPart, out var parsedCoeff))
+						{
+							coefficient = parsedCoeff!;
+						}
+					}
+					power = 1; // Default power for variable terms
+				}
+				
+				// Handle power
+				if (term.Contains("^"))
+				{
+					var powerPart = term.Substring(term.IndexOf('^') + 1);
+					if (int.TryParse(powerPart, out int parsedPower))
+					{
+						power = parsedPower;
+					}
+				}
+			}
+			else
+			{
+				// Constant term (no variable)
+				if (RationalNumber.TryParse(term, out var parsedCoeff))
+				{
+					coefficient = parsedCoeff!;
+				}
+				power = 0;
+			}
+			
+			// Apply sign
+			if (isNegative && coefficient != null)
+			{
+				coefficient = coefficient.Negate();
+			}
+			
+			// Add term to polynomial
+			if (coefficient != null)
+			{
+				AddTerm(power, coefficient);
+			}
 		}
 
 		#endregion

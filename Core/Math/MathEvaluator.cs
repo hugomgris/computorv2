@@ -12,6 +12,28 @@ namespace ComputorV2.Core.Math
 	{
 		private Dictionary<string, MathValue> _variables = new();
 		private AssignmentInfo? _lastAssignment = null;
+
+		/// <summary>
+		/// Check if expression contains variables (letters).
+		/// </summary>
+		private bool ContainsVariables(string expression)
+		{
+			return System.Text.RegularExpressions.Regex.IsMatch(expression, @"[a-zA-Z]");
+		}
+
+		/// <summary>
+		/// Check if expression is a polynomial with variable terms (like x^2, 3x, etc.)
+		/// This should NOT match simple variable references that can be resolved from storage.
+		/// </summary>
+		private bool IsPolynomialExpression(string expression)
+		{
+			// Look for polynomial patterns that clearly indicate polynomial expressions
+			// rather than simple variable references
+			return System.Text.RegularExpressions.Regex.IsMatch(expression, 
+				@"[a-zA-Z]\^" + // variable followed by ^ (like x^2)
+				@"|\d+\s*\*\s*[a-zA-Z]" + // number * variable (like 3*x)
+				@"|\d+[a-zA-Z]"); // number directly followed by variable (like 2x)
+		}
 		
 		public MathValue Evaluate(string expression)
 		{
@@ -23,11 +45,28 @@ namespace ComputorV2.Core.Math
 			}
 			else if (expression.Contains('=') && !expression.Contains("=="))
 			{
+				// Check if it's a polynomial equation (contains variable and equals)
+				if (ContainsVariables(expression))
+				{
+					return HandlePolynomialEquation(expression);
+				}
 				throw new ArgumentException($"Invalid assignment: '{expression}'. Variable names must start with a letter.");
+			}
+			else if (IsPolynomialExpression(expression))
+			{
+				// Expression looks like a polynomial - treat as polynomial
+				return new Polynomial(expression);
 			}
 			else
 			{
 				var resolvedExpression = ResolveVariables(expression);
+
+				// If after resolving variables, the expression still contains variables,
+				// then treat it as a polynomial
+				if (ContainsVariables(resolvedExpression))
+				{
+					return new Polynomial(expression);
+				}
 
 				var tokenizer = new Tokenizer();
 				var tokens = tokenizer.Tokenize(resolvedExpression);
@@ -209,6 +248,12 @@ namespace ComputorV2.Core.Math
 				value = parsedComplex!;
 				_variables[key] = value;
 			}
+			else if (IsPolynomialExpression(valueExpression))
+			{
+				// Value expression contains variables - treat as polynomial
+				value = new Polynomial(valueExpression);
+				_variables[key] = value;
+			}
 			else
 			{
 				var resolvedExpression = ResolveVariables(valueExpression);
@@ -276,6 +321,54 @@ namespace ComputorV2.Core.Math
 		public void SetVariable(string name, MathValue value)
 		{
 			_variables[name] = value;
+		}
+
+		/// <summary>
+		/// Handle polynomial equations like "x^2 + 2*x + 1 = 0"
+		/// </summary>
+		private MathValue HandlePolynomialEquation(string expression)
+		{
+			var parts = expression.Split('=');
+			if (parts.Length != 2)
+			{
+				throw new ArgumentException("Invalid equation format");
+			}
+
+			var leftSide = parts[0].Trim();
+			var rightSide = parts[1].Trim();
+
+			// Parse both sides as polynomials
+			var leftPoly = new Polynomial(leftSide);
+			var rightPoly = new Polynomial(rightSide);
+
+			// Move right side to left: leftPoly - rightPoly = 0
+			var equation = leftPoly.Subtract(rightPoly);
+
+			if (equation is Polynomial poly)
+			{
+				// Solve the polynomial equation
+				var solutions = poly.Solve();
+				
+				// For now, return a formatted string of solutions
+				// In a full implementation, this might return a special SolutionSet type
+				if (solutions.Count == 0)
+				{
+					throw new InvalidOperationException("No solution exists for this equation");
+				}
+				else if (solutions.Count == 1)
+				{
+					return solutions[0];
+				}
+				else
+				{
+					// Multiple solutions - return as a formatted string for now
+					var solutionStrings = solutions.Select(s => s.ToString());
+					Console.WriteLine($"Info: Multiple solutions: {string.Join(", ", solutionStrings)}");
+					return solutions[0]; // Return first solution
+				}
+			}
+
+			throw new InvalidOperationException("Unable to solve equation");
 		}
 	}
 }
