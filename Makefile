@@ -15,7 +15,7 @@ TESTS		:= ComputorV2.Tests
 
 # -=-=-=-=-    DOTNET SETTINGS -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
 
-DOTNET      = dotnet
+DOTNET      = /goinfre/hmunoz-g/dotnet/dotnet
 BUILD_FLAGS = --configuration Release --verbosity quiet --no-restore
 RUN_FLAGS   = --no-build --configuration Release
 
@@ -38,7 +38,7 @@ SOURCES     = 	Program.cs							\
 				Core/Types/IComplexNumber.cs		\
 				Core/Types/ComplexNumber.cs			\
 				Core/Types/Polynomial.cs			\
-				Core/Types/IMatrix.cs				\
+				Core/Types/Function.cs				\
 				Core/Types/Matrix.cs				\
 				IO/DisplayManager.cs				\
 				IO/InputHandler.cs					\
@@ -77,7 +77,7 @@ $(NAME): $(BUILD_MARKER)
 		echo "$(RED)Build failed - DLL not found$(DEF_COLOR)"; \
 		exit 1; \
 	fi
-	@echo "$(RED)This isn't even my final polynomial form$(DEF_COLOR)"
+	@echo "$(RED)This project should be reported as an act of self-harm$(DEF_COLOR)"
 
 check-build: $(BUILD_MARKER)
 	@echo "$(GREEN)Build is up to date$(DEF_COLOR)"

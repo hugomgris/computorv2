@@ -11,21 +11,9 @@ namespace ComputorV2.Core.Math
 	public class MathEvaluator
 	{
 		private Dictionary<string, MathValue> _variables = new();
+		private Dictionary<string, Function> _functions = new();
 		private AssignmentInfo? _lastAssignment = null;
 
-		private bool ContainsVariables(string expression)
-		{
-			return System.Text.RegularExpressions.Regex.IsMatch(expression, @"[a-zA-Z]");
-		}
-
-		private bool IsPolynomialExpression(string expression)
-		{
-			return System.Text.RegularExpressions.Regex.IsMatch(expression, 
-				@"[a-zA-Z]\^" + // variable followed by ^ (like x^2)
-				@"|\d+\s*\*\s*[a-zA-Z]" + // number * variable (like 3*x)
-				@"|\d+[a-zA-Z]"); // number directly followed by variable (like 2x)
-		}
-		
 		public MathValue Evaluate(string expression)
 		{
 			_lastAssignment = null;
@@ -89,6 +77,20 @@ namespace ComputorV2.Core.Math
 				}
 			}
 		}
+
+		private bool ContainsVariables(string expression)
+		{
+			return System.Text.RegularExpressions.Regex.IsMatch(expression, @"[a-zA-Z]");
+		}
+
+		private bool IsPolynomialExpression(string expression)
+		{
+			return System.Text.RegularExpressions.Regex.IsMatch(expression, 
+				@"[a-zA-Z]\^" + // variable followed by ^ (like x^2)
+				@"|\d+\s*\*\s*[a-zA-Z]" + // number * variable (like 3*x)
+				@"|\d+[a-zA-Z]"); // number directly followed by variable (like 2x)
+		}
+		
 
 		private List<string> ConvertToPostfix(List<string> tokens)
 		{
@@ -452,5 +454,24 @@ namespace ComputorV2.Core.Math
 
 			throw new InvalidOperationException("Unable to solve equation");
 		}
+
+		#region Function management
+
+		public Function? GetFunction(string name)
+		{
+			return _functions.TryGetValue(name, out Function? value) ? value : null;
+		}
+
+		public void SetFunction(string name, Function function)
+		{
+			_functions[name] = function;
+		}
+
+		public Dictionary<string, Function> GetFunctions()
+		{
+			return new Dictionary<string, Function>(_functions);
+		}
+
+		#endregion
 	}
 }
