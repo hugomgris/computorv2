@@ -13,22 +13,13 @@ namespace ComputorV2.Core.Math
 		private Dictionary<string, MathValue> _variables = new();
 		private AssignmentInfo? _lastAssignment = null;
 
-		/// <summary>
-		/// Check if expression contains variables (letters).
-		/// </summary>
 		private bool ContainsVariables(string expression)
 		{
 			return System.Text.RegularExpressions.Regex.IsMatch(expression, @"[a-zA-Z]");
 		}
 
-		/// <summary>
-		/// Check if expression is a polynomial with variable terms (like x^2, 3x, etc.)
-		/// This should NOT match simple variable references that can be resolved from storage.
-		/// </summary>
 		private bool IsPolynomialExpression(string expression)
 		{
-			// Look for polynomial patterns that clearly indicate polynomial expressions
-			// rather than simple variable references
 			return System.Text.RegularExpressions.Regex.IsMatch(expression, 
 				@"[a-zA-Z]\^" + // variable followed by ^ (like x^2)
 				@"|\d+\s*\*\s*[a-zA-Z]" + // number * variable (like 3*x)
@@ -39,13 +30,23 @@ namespace ComputorV2.Core.Math
 		{
 			_lastAssignment = null;
 			
-			if (IsAssignment(expression))
+			// Handle simple variable lookups directly (like "A")
+			var trimmed = expression.Trim();
+			if (IsSimpleVariable(trimmed) && _variables.ContainsKey(trimmed))
+			{
+				return _variables[trimmed];
+			}
+			
+			if (IsMatrixLiteral(expression))
+			{
+				return ParseMatrixFromString(expression);
+			}
+			else if (IsAssignment(expression))
 			{
 				return HandleAssignment(expression);
 			}
 			else if (expression.Contains('=') && !expression.Contains("=="))
 			{
-				// Check if it's a polynomial equation (contains variable and equals)
 				if (ContainsVariables(expression))
 				{
 					return HandlePolynomialEquation(expression);
@@ -54,28 +55,38 @@ namespace ComputorV2.Core.Math
 			}
 			else if (IsPolynomialExpression(expression))
 			{
-				// Expression looks like a polynomial - treat as polynomial
 				return new Polynomial(expression);
 			}
 			else
 			{
-				var resolvedExpression = ResolveVariables(expression);
-
-				// If after resolving variables, the expression still contains variables,
-				// then treat it as a polynomial
-				if (ContainsVariables(resolvedExpression))
+				var tokenizer = new Tokenizer();
+				var tokens = tokenizer.Tokenize(expression);
+				
+				bool hasVariables = tokens.Any(t => IsVariableToken(t) && _variables.ContainsKey(t));
+				bool hasUnknownVariables = tokens.Any(t => IsVariableToken(t) && !_variables.ContainsKey(t));
+				
+				if (hasUnknownVariables)
 				{
 					return new Polynomial(expression);
 				}
+				else if (hasVariables)
+				{
+					var postfix = ConvertToPostfix(tokens);
+					return ProcessPostfix(postfix);
+				}
+				else
+				{
+					var resolvedExpression = ResolveVariables(expression);
 
-				var tokenizer = new Tokenizer();
-				var tokens = tokenizer.Tokenize(resolvedExpression);
+					if (ContainsVariables(resolvedExpression))
+					{
+						return new Polynomial(expression);
+					}
 
-				var postfix = ConvertToPostfix(tokens);
-
-				var result = ProcessPostfix(postfix);
-
-				return result;
+					var resolvedTokens = tokenizer.Tokenize(resolvedExpression);
+					var postfix = ConvertToPostfix(resolvedTokens);
+					return ProcessPostfix(postfix);
+				}
 			}
 		}
 
@@ -86,7 +97,7 @@ namespace ComputorV2.Core.Math
 			
 			foreach (var token in tokens)
 			{				
-				if (IsNumber(token))
+				if (IsNumber(token) || (IsVariableToken(token) && _variables.ContainsKey(token)))
 				{
 					output.Enqueue(token);
 				}
@@ -125,7 +136,13 @@ namespace ComputorV2.Core.Math
 		private bool IsNumber(string token)
 		{
 			return RationalNumber.TryParse(token, out _) || 
-				ComplexNumber.TryParse(token, out _);
+				ComplexNumber.TryParse(token, out _) ||
+				IsMatrixToken(token);
+		}
+
+		private bool IsMatrixToken(string token)
+		{
+			return token.Trim().StartsWith("[") && token.Trim().EndsWith("]");
 		}
 
 		private bool HasHigherOrEqualPrecedence(string A, string B)
@@ -160,10 +177,26 @@ namespace ComputorV2.Core.Math
 					{
 						stack.Push(complex!);
 					}
+					else if (IsMatrixToken(token))
+					{
+						try
+						{
+							var matrix = new Matrix(token);
+							stack.Push(matrix);
+						}
+						catch (Exception ex)
+						{
+							throw new ArgumentException($"Invalid matrix format: {token}", ex);
+						}
+					}
 					else
 					{
 						throw new ArgumentException($"Invalid number format: {token}");
 					}
+				}
+				else if (IsVariableToken(token) && _variables.ContainsKey(token))
+				{
+					stack.Push(_variables[token]);
 				}
 				else if ("+-*/^".Contains(token))
 				{
@@ -174,6 +207,10 @@ namespace ComputorV2.Core.Math
 					var left = stack.Pop();
 					var result = ApplyOperation(left, right, token);
 					stack.Push(result);
+				}
+				else
+				{
+					throw new ArgumentException($"Unknown token: {token}");
 				}
 			}
 
@@ -208,6 +245,46 @@ namespace ComputorV2.Core.Math
 			return baseValue.Power(exp);
 		}
 
+		public bool IsMatrixLiteral(string expression)
+		{
+			var trimmed = expression.Trim();
+			if (!trimmed.StartsWith("[") || !trimmed.EndsWith("]"))
+        		return false;
+			
+			if (HasArithmeticOperators(trimmed))
+				return false;
+			
+			return trimmed.Contains(",") ||
+					trimmed.Contains(";") ||
+					trimmed.StartsWith("[[");
+		}
+		
+		private bool HasArithmeticOperators(string expression)
+		{
+			int bracketDepth = 0;
+			for (int i = 0; i < expression.Length; i++)
+			{
+				char c = expression[i];
+				if (c == '[') bracketDepth++;
+				else if (c == ']') bracketDepth--;
+				else if (bracketDepth == 0 && "+-*/^".Contains(c))
+					return true;
+			}
+			return false;
+		}
+
+		private Matrix ParseMatrixFromString(string expression)
+		{
+			try
+			{
+				return new Matrix(expression.Trim());
+			}
+			catch (Exception ex)
+			{
+				throw new ArgumentException($"Invalid matrix format: ${expression}", ex);
+			}
+		}
+
 		public bool IsAssignment(string expression)
 		{
 			if (!expression.Contains('=') || expression.Contains("=="))
@@ -238,7 +315,13 @@ namespace ComputorV2.Core.Math
 			var valueExpression = parts[1].Trim();
 			
 			MathValue value;
-			if (RationalNumber.TryParse(valueExpression, out RationalNumber? parsedRational))
+
+			if (IsMatrixLiteral(valueExpression))
+			{
+				value = new Matrix(valueExpression);
+				_variables[key] = value;
+			}
+			else if (RationalNumber.TryParse(valueExpression, out RationalNumber? parsedRational))
 			{
 				value = parsedRational!;
 				_variables[key] = value;
@@ -250,7 +333,6 @@ namespace ComputorV2.Core.Math
 			}
 			else if (IsPolynomialExpression(valueExpression))
 			{
-				// Value expression contains variables - treat as polynomial
 				value = new Polynomial(valueExpression);
 				_variables[key] = value;
 			}
@@ -282,7 +364,16 @@ namespace ComputorV2.Core.Math
 				{
 					if (_variables.ContainsKey(tokens[i]))
 					{
-						tokens[i] = _variables[tokens[i]].ToString();
+						var value = _variables[tokens[i]];
+
+						if (value is Matrix matrix)
+						{
+							tokens[i] = matrix.ToString();
+						}
+						else
+						{
+							tokens[i] = value.ToString();
+						}
 					}
 					else
 					{
@@ -323,9 +414,6 @@ namespace ComputorV2.Core.Math
 			_variables[name] = value;
 		}
 
-		/// <summary>
-		/// Handle polynomial equations like "x^2 + 2*x + 1 = 0"
-		/// </summary>
 		private MathValue HandlePolynomialEquation(string expression)
 		{
 			var parts = expression.Split('=');
@@ -337,20 +425,15 @@ namespace ComputorV2.Core.Math
 			var leftSide = parts[0].Trim();
 			var rightSide = parts[1].Trim();
 
-			// Parse both sides as polynomials
 			var leftPoly = new Polynomial(leftSide);
 			var rightPoly = new Polynomial(rightSide);
 
-			// Move right side to left: leftPoly - rightPoly = 0
 			var equation = leftPoly.Subtract(rightPoly);
 
 			if (equation is Polynomial poly)
 			{
-				// Solve the polynomial equation
 				var solutions = poly.Solve();
 				
-				// For now, return a formatted string of solutions
-				// In a full implementation, this might return a special SolutionSet type
 				if (solutions.Count == 0)
 				{
 					throw new InvalidOperationException("No solution exists for this equation");
@@ -361,10 +444,9 @@ namespace ComputorV2.Core.Math
 				}
 				else
 				{
-					// Multiple solutions - return as a formatted string for now
 					var solutionStrings = solutions.Select(s => s.ToString());
 					Console.WriteLine($"Info: Multiple solutions: {string.Join(", ", solutionStrings)}");
-					return solutions[0]; // Return first solution
+					return solutions[0];
 				}
 			}
 
