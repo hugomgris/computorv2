@@ -303,6 +303,39 @@ namespace ComputorV2.Core.Types
 			return result;
 		}
 
+		public Polynomial Derive()
+		{
+			// Alias for Derivative() to match Function class expectations
+			return Derivative();
+		}
+
+		public Polynomial Compose(Polynomial other)
+		{
+			// Polynomial composition: P(Q(x)) where this is P and other is Q
+			var result = new Polynomial();
+			
+			foreach (var term in _terms)
+			{
+				int power = term.Key;
+				var coefficient = term.Value;
+				
+				if (power == 0)
+				{
+					// Constant term: just add the coefficient
+					result = (Polynomial)result.Add(new Polynomial(coefficient));
+				}
+				else
+				{
+					// For term coefficient * x^power, substitute Q(x)^power
+					var otherPowered = (Polynomial)other.Power(power);
+					var scaledTerm = (Polynomial)otherPowered.Multiply(coefficient);
+					result = (Polynomial)result.Add(scaledTerm);
+				}
+			}
+			
+			return result;
+		}
+
 		#endregion
 
 		#region Solving (Integration with V1 Logic)
