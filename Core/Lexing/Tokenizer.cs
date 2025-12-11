@@ -48,7 +48,7 @@ namespace ComputorV2.Core.Lexing
 						tokens.Add(c.ToString());
 					}
 				}
-				else if (char.IsLetter(c))
+				else if (char.IsLetter(c) || (c == '_' && currentToken.Length > 0))
 				{
 					currentToken.Append(c);
 				}
@@ -87,7 +87,7 @@ namespace ComputorV2.Core.Lexing
 					}
 
 					string invalidChar = c.ToString();
-					throw new ArgumentException($"Invalid character '{invalidChar}' in expression. Variable names must start with a letter and contain only letters and digits.");
+					throw new ArgumentException($"Invalid character '{invalidChar}' in expression. Variable names must start with a letter and contain only letters, digits, and underscores.");
 				}
 			}
 

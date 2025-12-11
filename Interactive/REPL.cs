@@ -95,6 +95,18 @@ namespace ComputorV2.Interactive
 				return $"Variable '{assignmentInfo.Variable}' assigned: {assignmentInfo.Value}";
 			}
 
+			if (input.Contains('=') && input.Contains('(') && input.Contains(')'))
+			{
+				var parts = input.Split('=');
+				var leftSide = parts[0].Trim();
+				var match = System.Text.RegularExpressions.Regex.Match(leftSide, @"^([a-zA-Z][a-zA-Z0-9]*)\s*\(");
+				if (match.Success)
+				{
+					string functionName = match.Groups[1].Value;
+					return $"Function '{functionName}' defined: {result}";
+				}
+			}
+
 			return $"{result}";
 		}
 		

@@ -13,7 +13,7 @@ public class InvalidCharacterTests
 		var evaluator = new MathEvaluator();
 		
 		var exception = Assert.Throws<ArgumentException>(() => evaluator.Evaluate("@ + @"));
-		Assert.Equal("Invalid character '@' in expression. Variable names must start with a letter and contain only letters and digits.", exception.Message);
+		Assert.Equal("Invalid character '@' in expression. Variable names must start with a letter and contain only letters, digits, and underscores.", exception.Message);
 	}
 
 	[Fact]
@@ -23,7 +23,7 @@ public class InvalidCharacterTests
 		var evaluator = new MathEvaluator();
 		
 		var exception = Assert.Throws<ArgumentException>(() => evaluator.Evaluate("2 + $ - 3"));
-		Assert.Equal("Invalid character '$' in expression. Variable names must start with a letter and contain only letters and digits.", exception.Message);
+		Assert.Equal("Invalid character '$' in expression. Variable names must start with a letter and contain only letters, digits, and underscores.", exception.Message);
 	}
 
 	[Fact]
@@ -34,7 +34,7 @@ public class InvalidCharacterTests
 		evaluator.Evaluate("a = 5");
 		
 		var exception = Assert.Throws<ArgumentException>(() => evaluator.Evaluate("a + #"));
-		Assert.Equal("Invalid character '#' in expression. Variable names must start with a letter and contain only letters and digits.", exception.Message);
+		Assert.Equal("Invalid character '#' in expression. Variable names must start with a letter and contain only letters, digits, and underscores.", exception.Message);
 	}
 
 	[Fact]

@@ -18,11 +18,20 @@ namespace ComputorV2.Core.Math
 		{
 			_lastAssignment = null;
 			
-			// Handle simple variable lookups directly (like "A")
 			var trimmed = expression.Trim();
 			if (IsSimpleVariable(trimmed) && _variables.ContainsKey(trimmed))
 			{
 				return _variables[trimmed];
+			}
+
+			if (IsFunctionCall(trimmed))
+			{
+				return HandleFunctionCall(trimmed);
+			}
+
+			if (IsSimpleVariable(trimmed) && _functions.ContainsKey(trimmed))
+			{
+				return _functions[trimmed];
 			}
 			
 			if (IsMatrixLiteral(expression))
@@ -78,6 +87,30 @@ namespace ComputorV2.Core.Math
 			}
 		}
 
+		private bool IsFunctionCall(string expression)
+		{
+			return System.Text.RegularExpressions.Regex.IsMatch(expression, @"^([a-zA-Z][a-zA-Z0-9_]*)\s*\(.+\)$");
+		}
+
+		private MathValue HandleFunctionCall(string expression)
+		{
+			var match = System.Text.RegularExpressions.Regex.Match(expression, @"^([a-zA-Z][a-zA-Z0-9_]*)\s*\((.+)\)$");
+			if (!match.Success)
+				throw new ArgumentException($"Invalid function call: {expression}");
+
+			string functionName = match.Groups[1].Value;
+			string argumentExpression = match.Groups[2].Value.Trim();
+
+			if (!_functions.ContainsKey(functionName))
+				throw new ArgumentException($"Unknown function: {functionName}");
+
+			var function = _functions[functionName];
+			
+			MathValue argumentValue = Evaluate(argumentExpression);
+			
+			return function.Evaluate(argumentValue);
+		}
+
 		private bool ContainsVariables(string expression)
 		{
 			return System.Text.RegularExpressions.Regex.IsMatch(expression, @"[a-zA-Z]");
@@ -86,9 +119,9 @@ namespace ComputorV2.Core.Math
 		private bool IsPolynomialExpression(string expression)
 		{
 			return System.Text.RegularExpressions.Regex.IsMatch(expression, 
-				@"[a-zA-Z]\^" + // variable followed by ^ (like x^2)
-				@"|\d+\s*\*\s*[a-zA-Z]" + // number * variable (like 3*x)
-				@"|\d+[a-zA-Z]"); // number directly followed by variable (like 2x)
+				@"[a-zA-Z]\^" +
+				@"|\d+\s*\*\s*[a-zA-Z]" +
+				@"|\d+[a-zA-Z]");
 		}
 		
 
@@ -298,7 +331,16 @@ namespace ComputorV2.Core.Math
 
 			var leftSide = parts[0].Trim();
 
+			if (IsFunctionDefinition(leftSide))
+				return true;
+
 			return IsSimpleVariable(leftSide);
+		}
+
+		private bool IsFunctionDefinition(string leftSide)
+		{
+			var match = System.Text.RegularExpressions.Regex.Match(leftSide, @"^([a-zA-Z][a-zA-Z0-9_]*)\s*\(\s*([a-zA-Z][a-zA-Z0-9_]*)\s*\)$");
+			return match.Success;
 		}
 
 		private bool IsSimpleVariable(string token)
@@ -313,41 +355,73 @@ namespace ComputorV2.Core.Math
 		private MathValue HandleAssignment(string expression)
 		{
 			var parts = expression.Split('=');
-			var key = parts[0].Trim();
+			var leftSide = parts[0].Trim();
 			var valueExpression = parts[1].Trim();
 			
+			if (IsFunctionDefinition(leftSide))
+			{
+				return HandleFunctionAssignment(leftSide, valueExpression);
+			}
+			
+			if (leftSide.Contains('(') || leftSide.Contains(')'))
+			{
+				throw new ArgumentException($"Invalid variable name or function definition: {leftSide}");
+			}
+			
+			if (!IsSimpleVariable(leftSide))
+			{
+				throw new ArgumentException($"Invalid variable name: {leftSide}");
+			}
+
 			MathValue value;
 
 			if (IsMatrixLiteral(valueExpression))
 			{
 				value = new Matrix(valueExpression);
-				_variables[key] = value;
+				_variables[leftSide] = value;
 			}
 			else if (RationalNumber.TryParse(valueExpression, out RationalNumber? parsedRational))
 			{
 				value = parsedRational!;
-				_variables[key] = value;
+				_variables[leftSide] = value;
 			}
 			else if (ComplexNumber.TryParse(valueExpression, out ComplexNumber? parsedComplex))
 			{
 				value = parsedComplex!;
-				_variables[key] = value;
+				_variables[leftSide] = value;
 			}
 			else if (IsPolynomialExpression(valueExpression))
 			{
 				value = new Polynomial(valueExpression);
-				_variables[key] = value;
+				_variables[leftSide] = value;
 			}
 			else
 			{
 				var resolvedExpression = ResolveVariables(valueExpression);
 				value = Evaluate(resolvedExpression);
-				_variables[key] = value;
+				_variables[leftSide] = value;
 			}
 
-			_lastAssignment = new AssignmentInfo(key, value);
+			_lastAssignment = new AssignmentInfo(leftSide, value);
 			
 			return value;
+		}
+
+		private MathValue HandleFunctionAssignment(string leftSide, string expression)
+		{
+			var match = System.Text.RegularExpressions.Regex.Match(leftSide, @"^([a-zA-Z][a-zA-Z0-9_]*)\s*\(\s*([a-zA-Z][a-zA-Z0-9_]*)\s*\)$");
+			if (!match.Success)
+				throw new ArgumentException($"Invalid function definition: {leftSide}");
+
+			string functionName = match.Groups[1].Value;
+			string variable = match.Groups[2].Value;
+
+			string resolvedExpression = ResolveVariablesExcept(expression, variable);
+
+			var function = new Function(functionName, variable, resolvedExpression);
+			_functions[functionName] = function;
+
+			return function;
 		}
 		
 		public AssignmentInfo? GetLastAssignmentInfo()
@@ -364,6 +438,21 @@ namespace ComputorV2.Core.Math
 			{
 				if (IsVariableToken(tokens[i]))
 				{
+					if (tokens[i] == "i")
+					{
+						continue;
+					}
+					
+					if (i + 1 < tokens.Count && tokens[i + 1] == "(")
+					{
+						continue;
+					}
+					
+					if (_functions.ContainsKey(tokens[i]))
+					{
+						continue;
+					}
+					
 					if (_variables.ContainsKey(tokens[i]))
 					{
 						var value = _variables[tokens[i]];
@@ -404,6 +493,17 @@ namespace ComputorV2.Core.Math
 		public void ClearVariables()
 		{
 			_variables.Clear();
+		}
+
+		public void ClearFunctions()
+		{
+			_functions.Clear();
+		}
+
+		public void ClearAll()
+		{
+			_variables.Clear();
+			_functions.Clear();
 		}
 
 		public MathValue? GetVariable(string name)
@@ -473,5 +573,58 @@ namespace ComputorV2.Core.Math
 		}
 
 		#endregion
+
+		private string ResolveVariablesExcept(string expression, string excludeVariable)
+		{
+			var tokenizer = new Tokenizer();
+			var tokens = tokenizer.Tokenize(expression);
+
+			for (int i = 0; i < tokens.Count; i++)
+			{
+				if (IsVariableToken(tokens[i]))
+				{
+					if (tokens[i] == excludeVariable)
+					{
+						continue;
+					}
+					
+					if (tokens[i] == "i")
+					{
+						continue;
+					}
+					
+					if (i + 1 < tokens.Count && tokens[i + 1] == "(")
+					{
+						continue;
+					}
+
+					if (_functions.ContainsKey(tokens[i]))
+					{
+						continue;
+					}
+					
+					if (_variables.ContainsKey(tokens[i]))
+					{
+						var value = _variables[tokens[i]];
+
+						if (value is Matrix matrix)
+						{
+							tokens[i] = matrix.ToString();
+						}
+						else
+						{
+							tokens[i] = value.ToString();
+						}
+					}
+					else
+					{
+						throw new InvalidOperationException($"Undefined variable: '{tokens[i]}'. Assign a value to the variable first.");
+					}
+				}
+			}
+			
+			var result = string.Join(" ", tokens);
+			return result;
+		}
 	}
 }
