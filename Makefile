@@ -15,7 +15,7 @@ TESTS		:= ComputorV2.Tests
 
 # -=-=-=-=-    DOTNET SETTINGS -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- #
 
-DOTNET      = dotnet
+DOTNET      = /goinfre/hmunoz-g/dotnet/dotnet
 BUILD_FLAGS = --configuration Release --verbosity quiet --no-restore
 RUN_FLAGS   = --no-build --configuration Release
 
@@ -30,10 +30,16 @@ OBJ_DIR     = obj
 CSPROJ      = $(PROJECT).csproj
 SOURCES     = 	Program.cs							\
 				Core/Math/CustomMath.cs				\
-				Core/Math/RationalMathEvaluator.cs	\
-				Core/Types/RationalNumber.cs		\
+				Core/Math/MathEvaluator.cs			\
 				Core/Parsing/Parser.cs				\
+				Core/Types/MathValue.cs				\
+				Core/Types/IRationalNumber.cs		\
+				Core/Types/RationalNumber.cs		\
+				Core/Types/IComplexNumber.cs		\
+				Core/Types/ComplexNumber.cs			\
 				Core/Types/Polynomial.cs			\
+				Core/Types/Function.cs				\
+				Core/Types/Matrix.cs				\
 				IO/DisplayManager.cs				\
 				IO/InputHandler.cs					\
 				Interactive/HelpSystem.cs			\
@@ -71,7 +77,7 @@ $(NAME): $(BUILD_MARKER)
 		echo "$(RED)Build failed - DLL not found$(DEF_COLOR)"; \
 		exit 1; \
 	fi
-	@echo "$(RED)This isn't even my final polynomial form$(DEF_COLOR)"
+	@echo "$(RED)This project should be reported as an act of self-harm$(DEF_COLOR)"
 
 check-build: $(BUILD_MARKER)
 	@echo "$(GREEN)Build is up to date$(DEF_COLOR)"

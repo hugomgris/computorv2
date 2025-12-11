@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <Compile Remove="ComputorV2.Tests/**/*.cs" />
+    <Compile Remove="Core/Types/ComputorV1Polynomial/**/*.cs" />
   </ItemGroup>
 
 </Project>

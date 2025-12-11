@@ -2,9 +2,6 @@ using ComputorV2.Core.Types;
 
 namespace ComputorV2.Core.Math
 {
-	/// <summary>
-	/// Replication of Math.abs and Math.Sqrt because subject reasons
-	/// </summary>
 	public static class CustomMath
 	{
 		public static double Abs(double x)
@@ -44,9 +41,6 @@ namespace ComputorV2.Core.Math
 			return (int)(value + 0.5);
 		}
 
-		/// <summary>
-		/// Creates a simple text-based graph of a polynomial function
-		/// </summary>
 		public static void DrawPolynomialGraph(Polynomial polynomial, double xMin = -10, double xMax = 10, int width = 60, int height = 20)
 		{
 			Console.WriteLine("\nGraphical representation:");
@@ -127,9 +121,6 @@ namespace ComputorV2.Core.Math
 			Console.WriteLine(new string('=', width + 10));
 		}
 		
-		/// <summary>
-		/// Evaluates a polynomial at a given x value
-		/// </summary>
 		public static double EvaluatePolynomial(Polynomial polynomial, double x)
 		{
 			double result = 0;
@@ -137,7 +128,21 @@ namespace ComputorV2.Core.Math
 			foreach (var term in polynomial.GetTerms())
 			{
 				int power = term.Key;
-				double coefficient = term.Value;
+				var coefficientValue = term.Value;
+				
+				double coefficient;
+				if (coefficientValue is RationalNumber rational)
+				{
+					coefficient = (double)rational.Numerator / rational.Denominator;
+				}
+				else if (coefficientValue is ComplexNumber complex)
+				{
+					coefficient = (double)complex.Real.Numerator / complex.Real.Denominator;
+				}
+				else
+				{
+					coefficient = 0;
+				}
 				
 				double termValue = coefficient;
 				
@@ -157,9 +162,6 @@ namespace ComputorV2.Core.Math
 			return result;
 		}
 
-		/// <summary>
-		/// Finds approximate roots using simple numerical method
-		/// </summary>
 		public static List<double> FindApproximateRoots(Polynomial polynomial, double xMin = -10, double xMax = 10, double step = 0.1)
 		{
 			var roots = new List<double>();
