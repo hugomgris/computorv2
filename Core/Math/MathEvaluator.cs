@@ -50,6 +50,14 @@ namespace ComputorV2.Core.Math
 				}
 				throw new ArgumentException($"Invalid assignment: '{expression}'. Variable names must start with a letter.");
 			}
+			else if (IsComplexNumberExpression(expression))
+			{
+				// Force complex number evaluation through postfix processing
+				var tokenizer = new Tokenizer();
+				var tokens = tokenizer.Tokenize(expression);
+				var postfix = ConvertToPostfix(tokens);
+				return ProcessPostfix(postfix);
+			}
 			else if (IsPolynomialExpression(expression))
 			{
 				return new Polynomial(expression);
@@ -59,11 +67,16 @@ namespace ComputorV2.Core.Math
 				var tokenizer = new Tokenizer();
 				var tokens = tokenizer.Tokenize(expression);
 				
-				bool hasVariables = tokens.Any(t => IsVariableToken(t) && _variables.ContainsKey(t));
-				bool hasUnknownVariables = tokens.Any(t => IsVariableToken(t) && !_variables.ContainsKey(t));
+				bool hasVariables = tokens.Any(t => IsVariableToken(t) && (_variables.ContainsKey(t) || t == "i"));
+				bool hasUnknownVariables = tokens.Any(t => IsVariableToken(t) && !_variables.ContainsKey(t) && t != "i");
 				
 				if (hasUnknownVariables)
 				{
+					// For single letters that are undefined, throw an error instead of creating a polynomial
+					if (tokens.Count == 1 && IsVariableToken(tokens[0]) && !_variables.ContainsKey(tokens[0]) && tokens[0] != "i")
+					{
+						throw new ArgumentException($"Undefined variable: '{tokens[0]}'");
+					}
 					return new Polynomial(expression);
 				}
 				else if (hasVariables)
@@ -118,10 +131,31 @@ namespace ComputorV2.Core.Math
 
 		private bool IsPolynomialExpression(string expression)
 		{
-			return System.Text.RegularExpressions.Regex.IsMatch(expression, 
-				@"[a-zA-Z]\^" +
-				@"|\d+\s*\*\s*[a-zA-Z]" +
-				@"|\d+[a-zA-Z]");
+			// Check for polynomial patterns but exclude cases where the variable is 'i' (imaginary unit)
+			var patterns = new[]
+			{
+				@"[a-zA-Z]\^",                    // variable^power
+				@"\d+\s*\*\s*[a-zA-Z]",          // number * variable  
+				@"\d+[a-zA-Z]"                    // number followed by variable (implicit multiplication)
+			};
+
+			foreach (var pattern in patterns)
+			{
+				var matches = System.Text.RegularExpressions.Regex.Matches(expression, pattern);
+				foreach (System.Text.RegularExpressions.Match match in matches)
+				{
+					// If this match contains 'i' as the variable, don't treat it as a polynomial
+					if (match.Value.Contains('i'))
+					{
+						// Extract the variable part to check if it's exactly 'i'
+						var variablePart = System.Text.RegularExpressions.Regex.Match(match.Value, @"[a-zA-Z]+").Value;
+						if (variablePart == "i")
+							continue; // Skip this match, it's the imaginary unit
+					}
+					return true; // Found a genuine polynomial pattern
+				}
+			}
+			return false;
 		}
 		
 
@@ -130,11 +164,19 @@ namespace ComputorV2.Core.Math
 			var operators = new Stack<string>();
 			var output = new Queue<string>();
 			
-			foreach (var token in tokens)
-			{				
-				if (IsNumber(token) || (IsVariableToken(token) && _variables.ContainsKey(token)))
+			for (int i = 0; i < tokens.Count; i++)
+			{
+				var token = tokens[i];
+				
+				if (IsNumber(token) || (IsVariableToken(token) && _variables.ContainsKey(token)) || token == "i")
 				{
 					output.Enqueue(token);
+				}
+				else if (token == "-" && IsUnaryMinus(i, tokens))
+				{
+					// Handle unary minus by treating it as multiplication by -1
+					output.Enqueue("-1");
+					operators.Push("*");
 				}
 				else if ("+-*/^".Contains(token))
 				{
@@ -166,6 +208,18 @@ namespace ComputorV2.Core.Math
 			}
 
 			return output.ToList();
+		}
+
+		private bool IsUnaryMinus(int index, List<string> tokens)
+		{
+			// Unary minus if:
+			// 1. First token
+			// 2. After an operator
+			// 3. After opening parenthesis
+			if (index == 0) return true;
+			
+			var previousToken = tokens[index - 1];
+			return "+-*/^(".Contains(previousToken);
 		}
 
 		private bool IsNumber(string token)
@@ -232,6 +286,11 @@ namespace ComputorV2.Core.Math
 				else if (IsVariableToken(token) && _variables.ContainsKey(token))
 				{
 					stack.Push(_variables[token]);
+				}
+				else if (token == "i")
+				{
+					// Handle 'i' as the imaginary unit constant
+					stack.Push(ComplexNumber.I);
 				}
 				else if ("+-*/^".Contains(token))
 				{
@@ -625,6 +684,29 @@ namespace ComputorV2.Core.Math
 			
 			var result = string.Join(" ", tokens);
 			return result;
+		}
+
+		private bool IsComplexNumberExpression(string expression)
+		{
+			// Check for patterns that indicate complex number expressions with 'i'
+			var complexPatterns = new[]
+			{
+				@"\bi\b",                         // standalone 'i'
+				@"\d+\s*\*\s*i\b",               // number * i
+				@"\d+i\b",                        // implicit multiplication like 4i
+				@"[+-]\s*i\b",                    // +i or -i
+				@"[+-]\s*\d+\s*\*\s*i\b",        // +/- number * i
+				@"[+-]\s*\d+i\b"                 // +/- numberi
+			};
+
+			foreach (var pattern in complexPatterns)
+			{
+				if (System.Text.RegularExpressions.Regex.IsMatch(expression, pattern))
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 }
