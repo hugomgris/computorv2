@@ -74,8 +74,8 @@ namespace ComputorV2.Tests.Integration
             var matrix = (Matrix)result;
             Assert.Equal(2, matrix.Rows);
             Assert.Equal(2, matrix.Cols);
-            Assert.Equal("6", matrix[0,0].ToString());  // 1+5
-            Assert.Equal("12", matrix[1,1].ToString()); // 4+8
+            Assert.Equal("6", matrix[0,0].ToString());
+            Assert.Equal("12", matrix[1,1].ToString());
         }
 
         [Fact]
@@ -83,8 +83,8 @@ namespace ComputorV2.Tests.Integration
         {
             var evaluator = new MathEvaluator();
             
-            evaluator.Evaluate("a = [[1,2,3];[4,5,6]]");  // 2x3
-            evaluator.Evaluate("b = [[7,8];[9,10];[11,12]]");  // 3x2
+            evaluator.Evaluate("a = [[1,2,3];[4,5,6]]");
+            evaluator.Evaluate("b = [[7,8];[9,10];[11,12]]");
             
             var result = evaluator.Evaluate("a * b");
             
@@ -105,8 +105,8 @@ namespace ComputorV2.Tests.Integration
             var matrix = (Matrix)result;
             Assert.Equal(2, matrix.Rows);
             Assert.Equal(2, matrix.Cols);
-            Assert.Equal("6", matrix[0,0].ToString());  // 1+5
-            Assert.Equal("12", matrix[1,1].ToString()); // 4+8
+            Assert.Equal("6", matrix[0,0].ToString());
+            Assert.Equal("12", matrix[1,1].ToString());
         }
     }
 }

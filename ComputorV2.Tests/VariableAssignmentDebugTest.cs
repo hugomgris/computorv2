@@ -16,6 +16,7 @@ namespace ComputorV2.Tests
             Assert.Equal(27, ((RationalNumber)result1).Numerator);
 
             var result2 = evaluator.Evaluate("2 * 27 - 5 % 4");
+			Assert.IsType<RationalNumber>(result2);
             Assert.Equal(53, ((RationalNumber)result2).Numerator);
             
             var varAValue = evaluator.GetVariable("varA");
