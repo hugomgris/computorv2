@@ -313,21 +313,34 @@ namespace ComputorV2.Core.Math
 			return stack.Pop();
 		}
 
-		private MathValue ApplyOperation(MathValue left, MathValue right, string op)
+	private MathValue ApplyOperation(MathValue left, MathValue right, string op)
+	{
+		// Explicitly handle RationalNumber operations to preserve type
+		if (left is RationalNumber leftRat && right is RationalNumber rightRat)
 		{
 			return op switch
 			{
-				"+" => left.Add(right),
-				"-" => left.Subtract(right),
-				"*" => left.Multiply(right),
-				"/" => left.Divide(right),
-				"%" => left.Modulo(right),
-				"^" => ApplyPowerOperation(left, right),
+				"+" => leftRat + rightRat,
+				"-" => leftRat - rightRat,
+				"*" => leftRat * rightRat,
+				"/" => leftRat / rightRat,
+				"%" => leftRat % rightRat,
+				"^" => leftRat.Power((int)rightRat.Numerator),
 				_ => throw new ArgumentException($"Unknown operator: {op}")
 			};
 		}
-
-		private MathValue ApplyPowerOperation(MathValue baseValue, MathValue exponent)
+		
+		return op switch
+		{
+			"+" => left.Add(right),
+			"-" => left.Subtract(right),
+			"*" => left.Multiply(right),
+			"/" => left.Divide(right),
+			"%" => left.Modulo(right),
+			"^" => ApplyPowerOperation(left, right),
+			_ => throw new ArgumentException($"Unknown operator: {op}")
+		};
+	}		private MathValue ApplyPowerOperation(MathValue baseValue, MathValue exponent)
 		{
 			var rationalExp = exponent.AsRational();
 			if (rationalExp == null || !rationalExp.IsInteger)
@@ -422,46 +435,62 @@ namespace ComputorV2.Core.Math
 				return HandleFunctionAssignment(leftSide, valueExpression);
 			}
 			
-			if (leftSide.Contains('(') || leftSide.Contains(')'))
-			{
-				throw new ArgumentException($"Invalid variable name or function definition: {leftSide}");
-			}
+		if (leftSide.Contains('(') || leftSide.Contains(')'))
+		{
+			throw new ArgumentException($"Invalid variable name or function definition: {leftSide}");
+		}
+		
+		if (!IsSimpleVariable(leftSide))
+		{
+			throw new ArgumentException($"Invalid variable name: {leftSide}");
+		}
+
+		MathValue value;
+
+		if (IsMatrixLiteral(valueExpression))
+		{
+			value = new Matrix(valueExpression);
+			_variables[leftSide] = value;
+		}
+		else if (RationalNumber.TryParse(valueExpression, out RationalNumber? parsedRational))
+		{
+			value = parsedRational!;
+			_variables[leftSide] = value;
+		}
+		else if (ComplexNumber.TryParse(valueExpression, out ComplexNumber? parsedComplex))
+		{
+			value = parsedComplex!;
+			_variables[leftSide] = value;
+		}
+		else
+		{
+			// Try to resolve variables first if all variables are defined
+			var tokenizer = new Tokenizer();
+			var tokens = tokenizer.Tokenize(valueExpression);
+			var variableTokens = tokens.Where(t => IsVariableToken(t) && t != "i").ToList();
+			bool allVariablesDefined = variableTokens.All(t => _variables.ContainsKey(t) || _functions.ContainsKey(t));
 			
-			if (!IsSimpleVariable(leftSide))
+			if (allVariablesDefined && variableTokens.Any())
 			{
-				throw new ArgumentException($"Invalid variable name: {leftSide}");
-			}
-
-			MathValue value;
-
-			if (IsMatrixLiteral(valueExpression))
-			{
-				value = new Matrix(valueExpression);
-				_variables[leftSide] = value;
-			}
-			else if (RationalNumber.TryParse(valueExpression, out RationalNumber? parsedRational))
-			{
-				value = parsedRational!;
-				_variables[leftSide] = value;
-			}
-			else if (ComplexNumber.TryParse(valueExpression, out ComplexNumber? parsedComplex))
-			{
-				value = parsedComplex!;
+				// All variables are defined, so resolve and evaluate
+				var resolvedExpression = ResolveVariables(valueExpression);
+				value = Evaluate(resolvedExpression);
 				_variables[leftSide] = value;
 			}
 			else if (IsPolynomialExpression(valueExpression))
 			{
+				// Contains undefined variables or polynomial-like expression
 				value = new Polynomial(valueExpression);
 				_variables[leftSide] = value;
 			}
 			else
 			{
+				// No variables or simple expression
 				var resolvedExpression = ResolveVariables(valueExpression);
 				value = Evaluate(resolvedExpression);
 				_variables[leftSide] = value;
 			}
-
-			_lastAssignment = new AssignmentInfo(leftSide, value);
+		}			_lastAssignment = new AssignmentInfo(leftSide, value);
 			
 			return value;
 		}
@@ -695,6 +724,10 @@ namespace ComputorV2.Core.Math
 
 		private bool IsComplexNumberExpression(string expression)
 		{
+			// First check if expression contains 'i' at all
+			if (!expression.Contains('i'))
+				return false;
+			
 			var complexPatterns = new[]
 			{
 				@"\bi\b",
