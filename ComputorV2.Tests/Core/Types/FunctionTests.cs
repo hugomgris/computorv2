@@ -109,7 +109,7 @@ using ComputorV2.Core.Types;
 				var str = function.ToString();
 				
 				Assert.Contains("f(x)", str);
-				Assert.Contains("2 * X + 1", str);
+				Assert.Contains("2*x + 1", str);
 			}
 
 			#endregion

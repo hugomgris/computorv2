@@ -16,12 +16,10 @@ namespace ComputorV2.Tests
             Assert.NotNull(assignmentInfo);
             Assert.Equal("varC", assignmentInfo.Variable);
             
-            // Check that the value is a RationalNumber
             Assert.IsType<ComputorV2.Core.Types.RationalNumber>(assignmentInfo.Value);
             
             var rational = (ComputorV2.Core.Types.RationalNumber)assignmentInfo.Value;
             
-            // Test the decimal string representation
             var decimalString = rational.ToDecimalString();
             Assert.Equal("-4.3", decimalString);
         }
@@ -36,12 +34,10 @@ namespace ComputorV2.Tests
             Assert.NotNull(assignmentInfo);
             Assert.Equal("varB", assignmentInfo.Variable);
             
-            // Check that the value is a RationalNumber
             Assert.IsType<ComputorV2.Core.Types.RationalNumber>(assignmentInfo.Value);
             
             var rational = (ComputorV2.Core.Types.RationalNumber)assignmentInfo.Value;
             
-            // Test the decimal string representation
             var decimalString = rational.ToDecimalString();
             Assert.Equal("4.242", decimalString);
         }

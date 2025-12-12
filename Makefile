@@ -31,7 +31,6 @@ CSPROJ      = $(PROJECT).csproj
 SOURCES     = 	Program.cs							\
 				Core/Math/CustomMath.cs				\
 				Core/Math/MathEvaluator.cs			\
-				Core/Parsing/Parser.cs				\
 				Core/Types/MathValue.cs				\
 				Core/Types/IRationalNumber.cs		\
 				Core/Types/RationalNumber.cs		\

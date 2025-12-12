@@ -175,6 +175,11 @@ namespace ComputorV2.Core.Types
 			};
 		}
 
+		public override MathValue Modulo(MathValue other)
+		{
+			throw new ArgumentException("Modulo operation is not supported for polynomials");
+		}
+
 		public override MathValue Power(int exponent)
 		{
 			if (exponent < 0) throw new ArgumentException("Negative exponents not supported for polynomials");
@@ -305,13 +310,11 @@ namespace ComputorV2.Core.Types
 
 		public Polynomial Derive()
 		{
-			// Alias for Derivative() to match Function class expectations
 			return Derivative();
 		}
 
 		public Polynomial Compose(Polynomial other)
 		{
-			// Polynomial composition: P(Q(x)) where this is P and other is Q
 			var result = new Polynomial();
 			
 			foreach (var term in _terms)
@@ -321,12 +324,10 @@ namespace ComputorV2.Core.Types
 				
 				if (power == 0)
 				{
-					// Constant term: just add the coefficient
 					result = (Polynomial)result.Add(new Polynomial(coefficient));
 				}
 				else
 				{
-					// For term coefficient * x^power, substitute Q(x)^power
 					var otherPowered = (Polynomial)other.Power(power);
 					var scaledTerm = (Polynomial)otherPowered.Multiply(coefficient);
 					result = (Polynomial)result.Add(scaledTerm);
@@ -710,6 +711,7 @@ namespace ComputorV2.Core.Types
 		public override MathValue Subtract(MathValue other) => throw new InvalidOperationException("Cannot perform arithmetic on infinite solutions");
 		public override MathValue Multiply(MathValue other) => throw new InvalidOperationException("Cannot perform arithmetic on infinite solutions");
 		public override MathValue Divide(MathValue other) => throw new InvalidOperationException("Cannot perform arithmetic on infinite solutions");
+		public override MathValue Modulo(MathValue other) => throw new InvalidOperationException("Cannot perform arithmetic on infinite solutions");
 		public override MathValue Power(int exponent) => throw new InvalidOperationException("Cannot perform arithmetic on infinite solutions");
 		public override MathValue Negate() => throw new InvalidOperationException("Cannot perform arithmetic on infinite solutions");
 

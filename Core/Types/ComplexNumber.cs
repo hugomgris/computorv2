@@ -327,6 +327,11 @@ namespace ComputorV2.Core.Types
 			};
 		}
 
+		public override MathValue Modulo(MathValue other)
+		{
+			throw new ArgumentException("Modulo operation is not supported for complex numbers");
+		}
+
 		public override MathValue Power(int exponent) => PowerComplex(exponent);
 		public override MathValue Negate() => -this;
 

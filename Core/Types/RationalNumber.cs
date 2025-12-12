@@ -54,11 +54,9 @@ namespace ComputorV2.Core.Types
 			denominator *= 10;
 		}
 		
-		// Handle negative numbers correctly
 		long numerator;
 		if (value < 0)
 		{
-			// For negative numbers, both whole and fractional parts contribute to the negative value
 			long absWholePart = wholePart < 0 ? -wholePart : wholePart;
 			numerator = -(absWholePart * denominator + long.Parse(fractionalPart));
 		}
@@ -173,6 +171,17 @@ namespace ComputorV2.Core.Types
 			long numerator = a._numerator * b._denominator;
 			long denominator = a._denominator * b._numerator;
 			return new RationalNumber(numerator, denominator);
+		}
+
+		public static RationalNumber operator %(RationalNumber a, RationalNumber b)
+		{
+			if (b.IsZero)
+				throw new DivideByZeroException("Cannot perform modulo by zero");
+
+			decimal aDecimal = (decimal)a;
+			decimal bDecimal = (decimal)b;
+			decimal result = aDecimal % bDecimal;
+			return (RationalNumber)result;
 		}
 
 		public static RationalNumber operator -(RationalNumber a)
@@ -395,6 +404,15 @@ namespace ComputorV2.Core.Types
 				RationalNumber r => this / r,
 				ComplexNumber c => new ComplexNumber(this) / c,
 				_ => throw new ArgumentException($"Cannot divide {GetType().Name} and {other.GetType().Name}")
+			};
+		}
+
+		public override MathValue Modulo(MathValue other)
+		{
+			return other switch
+			{
+				RationalNumber r => this % r,
+				_ => throw new ArgumentException($"Cannot perform modulo operation between {GetType().Name} and {other.GetType().Name}")
 			};
 		}
 

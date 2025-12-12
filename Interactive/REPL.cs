@@ -25,7 +25,7 @@ namespace ComputorV2.Interactive
 			try
 			{
 				_historyManager.LoadFromDefaultLocation();
-				Console.WriteLine($"Loaded {_historyManager.Count} commands from history."); // DEBUG
+				Console.WriteLine($"Loaded {_historyManager.Count} commands from history.");
 			}
 			catch (Exception)
 			{
@@ -92,7 +92,6 @@ namespace ComputorV2.Interactive
 			var assignmentInfo = _mathEvaluator.GetLastAssignmentInfo();
 			if (assignmentInfo != null)
 			{
-				// For RationalNumber assignments, prefer decimal display format for better readability
 				string valueDisplay = assignmentInfo.Value is ComputorV2.Core.Types.RationalNumber rational 
 					? rational.ToDecimalString() 
 					: assignmentInfo.Value.ToString();
@@ -111,13 +110,11 @@ namespace ComputorV2.Interactive
 				}
 			}
 
-			// For arithmetic results, also prefer decimal display format for RationalNumbers
 			if (result is ComputorV2.Core.Types.RationalNumber resultRational)
 			{
 				return resultRational.ToDecimalString();
 			}
 			
-			// Handle ComplexNumbers that represent real numbers (zero imaginary part)
 			if (result is ComputorV2.Core.Types.ComplexNumber resultComplex && resultComplex.IsReal)
 			{
 				return resultComplex.Real.ToDecimalString();

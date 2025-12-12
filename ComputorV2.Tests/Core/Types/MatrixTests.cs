@@ -112,22 +112,18 @@ namespace ComputorV2.Tests.Core.Types
 		[Fact]
 		public void Matrix_DifferentFormats_ShouldWork()
 		{
-			// Row vector (1×2)
 			var rowVector = new Matrix("[1,2]");
 			Assert.Equal(1, rowVector.Rows);
 			Assert.Equal(2, rowVector.Cols);
-			
-			// Column vector using semicolon (2×1) 
+
 			var colVector = new Matrix("[1;2]");
 			Assert.Equal(2, colVector.Rows);
 			Assert.Equal(1, colVector.Cols);
 			
-			// Standard 2×2 matrix
 			var matrix2x2 = new Matrix("[[1,2];[3,4]]");
 			Assert.Equal(2, matrix2x2.Rows);
 			Assert.Equal(2, matrix2x2.Cols);
 			
-			// Single element (1×1)
 			var scalar = new Matrix("[5]");
 			Assert.Equal(1, scalar.Rows);
 			Assert.Equal(1, scalar.Cols);
@@ -381,7 +377,6 @@ namespace ComputorV2.Tests.Core.Types
 			var matrix = new Matrix("[[1,2,3];[4,5,6];[7,8,9]]");
 			var det = matrix.Determinant();
 			
-			// This matrix has determinant = 0 (singular)
 			Assert.Equal("0", det.ToString());
 		}
 		
@@ -391,7 +386,6 @@ namespace ComputorV2.Tests.Core.Types
 			var matrix = new Matrix("[[1,0,2];[2,1,0];[1,1,1]]");
 			var det = matrix.Determinant();
 			
-			// This matrix should have a non-zero determinant
 			Assert.NotEqual("0", det.ToString());
 		}
 

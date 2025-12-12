@@ -8,6 +8,7 @@ namespace ComputorV2.Core.Types
 		private readonly string _variable;
 		private readonly MathValue _expression;
 		private readonly string _name;
+		private readonly string? _originalExpression;
 
 		#region Constructors
 
@@ -15,6 +16,7 @@ namespace ComputorV2.Core.Types
 		{
 			_name = name;
 			_variable = variable;
+			_originalExpression = expression;
 
 			if (ComplexNumber.TryParse(expression, out ComplexNumber? complex))
 				_expression = complex!;
@@ -31,6 +33,7 @@ namespace ComputorV2.Core.Types
 			_name = name;
 			_variable = variable;
 			_expression = expression;
+			_originalExpression = null;
 		}
 
 		#endregion
@@ -72,6 +75,11 @@ namespace ComputorV2.Core.Types
 
 		public override string ToString()
 		{
+			if (!string.IsNullOrEmpty(_originalExpression))
+			{
+				return $"{_name}({_variable}) = {_originalExpression}";
+			}
+			
 			return $"{_name}({_variable}) = {_expression}";
 		}
 
@@ -226,6 +234,11 @@ namespace ComputorV2.Core.Types
 			{
 				throw new InvalidOperationException($"Cannot divide functions: {e.Message}");
 			}
+		}
+
+		public override MathValue Modulo(MathValue other)
+		{
+			throw new ArgumentException("Modulo operation is not supported for functions");
 		}
 
 		public override MathValue Negate()

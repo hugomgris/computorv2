@@ -7,7 +7,6 @@ namespace ComputorV2.Tests
 {
 	public class MathematicalParserTests
 	{
-		// Naming convention: MethodName_Scenario_ExpectedBehavior
 		[Fact] public void Evaluate_SimpleNumber_ReturnsValue()
 		{
 			var evaluator = new MathEvaluator();

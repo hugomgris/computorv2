@@ -7,7 +7,6 @@ namespace ComputorV2.Tests
 {
 	public class ComplexNumberTypeTests
 	{
-		// Naming convention: MethodName_Scenario_ExpectedBehavior
 		[Fact] public void Evaluate_ComplexNumberType_BasicConstructorWithRealAndImaginaryNonZero()
 		{
 			ComplexNumber c = new ComplexNumber(1, 2);

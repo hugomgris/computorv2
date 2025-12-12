@@ -52,7 +52,7 @@ namespace ComputorV2.Core.Lexing
 				{
 					currentToken.Append(c);
 				}
-				else if ("+-*/()^=;".Contains(c))
+				else if ("+-*/%()^=;".Contains(c))
 				{
 					if (currentToken.Length > 0)
 					{
@@ -105,7 +105,7 @@ namespace ComputorV2.Core.Lexing
 			{
 				char c = expr[i];
 				if (char.IsDigit(c) || c == '.') continue;
-				if (char.IsWhiteSpace(c) || "+-*/()^=".Contains(c)) break;
+				if (char.IsWhiteSpace(c) || "+-*/%()^=".Contains(c)) break;
 				return false;
 			}
 			return true;

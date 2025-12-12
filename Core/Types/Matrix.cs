@@ -268,6 +268,11 @@ namespace ComputorV2.Core.Types
 			return this.Multiply(inverse);
 		}
 
+		public override MathValue Modulo(MathValue other)
+		{
+			throw new ArgumentException("Modulo operation is not supported for matrices");
+		}
+
 		public override MathValue Power(int exponent)
 		{
 			if (!IsSquare)

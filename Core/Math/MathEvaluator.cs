@@ -24,6 +24,11 @@ namespace ComputorV2.Core.Math
 				return _variables[trimmed];
 			}
 
+			if (IsAssignment(trimmed))
+			{
+				return HandleAssignment(trimmed);
+			}
+			
 			if (IsFunctionCall(trimmed))
 			{
 				return HandleFunctionCall(trimmed);
@@ -38,10 +43,6 @@ namespace ComputorV2.Core.Math
 			{
 				return ParseMatrixFromString(expression);
 			}
-			else if (IsAssignment(expression))
-			{
-				return HandleAssignment(expression);
-			}
 			else if (expression.Contains('=') && !expression.Contains("=="))
 			{
 				if (ContainsVariables(expression))
@@ -52,7 +53,6 @@ namespace ComputorV2.Core.Math
 			}
 			else if (IsComplexNumberExpression(expression))
 			{
-				// Force complex number evaluation through postfix processing
 				var tokenizer = new Tokenizer();
 				var tokens = tokenizer.Tokenize(expression);
 				var postfix = ConvertToPostfix(tokens);
@@ -67,7 +67,6 @@ namespace ComputorV2.Core.Math
 				var tokenizer = new Tokenizer();
 				var tokens = tokenizer.Tokenize(expression);
 				
-				// Special case: handle simple negative numbers like "-4.3"
 				if (tokens.Count == 2 && tokens[0] == "-" && IsNumber(tokens[1]))
 				{
 					string negativeNumber = "-" + tokens[1];
@@ -82,7 +81,6 @@ namespace ComputorV2.Core.Math
 				
 				if (hasUnknownVariables)
 				{
-					// For single letters that are undefined, throw an error instead of creating a polynomial
 					if (tokens.Count == 1 && IsVariableToken(tokens[0]) && !_variables.ContainsKey(tokens[0]) && tokens[0] != "i")
 					{
 						throw new ArgumentException($"Undefined variable: '{tokens[0]}'");
@@ -141,12 +139,11 @@ namespace ComputorV2.Core.Math
 
 		private bool IsPolynomialExpression(string expression)
 		{
-			// Check for polynomial patterns but exclude cases where the variable is 'i' (imaginary unit)
 			var patterns = new[]
 			{
-				@"[a-zA-Z]\^",                    // variable^power
-				@"\d+\s*\*\s*[a-zA-Z]",          // number * variable  
-				@"\d+[a-zA-Z]"                    // number followed by variable (implicit multiplication)
+				@"[a-zA-Z]\^",
+				@"\d+\s*\*\s*[a-zA-Z]",
+				@"\d+[a-zA-Z]"
 			};
 
 			foreach (var pattern in patterns)
@@ -154,15 +151,13 @@ namespace ComputorV2.Core.Math
 				var matches = System.Text.RegularExpressions.Regex.Matches(expression, pattern);
 				foreach (System.Text.RegularExpressions.Match match in matches)
 				{
-					// If this match contains 'i' as the variable, don't treat it as a polynomial
 					if (match.Value.Contains('i'))
 					{
-						// Extract the variable part to check if it's exactly 'i'
 						var variablePart = System.Text.RegularExpressions.Regex.Match(match.Value, @"[a-zA-Z]+").Value;
 						if (variablePart == "i")
-							continue; // Skip this match, it's the imaginary unit
+							continue;
 					}
-					return true; // Found a genuine polynomial pattern
+					return true;
 				}
 			}
 			return false;
@@ -184,11 +179,10 @@ namespace ComputorV2.Core.Math
 				}
 				else if (token == "-" && IsUnaryMinus(i, tokens))
 				{
-					// Handle unary minus by treating it as multiplication by -1
 					output.Enqueue("-1");
 					operators.Push("*");
 				}
-				else if ("+-*/^".Contains(token))
+				else if ("+-*/%^".Contains(token))
 				{
 					while (operators.Count > 0 &&
 						operators.Peek() != "(" &&
@@ -222,10 +216,6 @@ namespace ComputorV2.Core.Math
 
 		private bool IsUnaryMinus(int index, List<string> tokens)
 		{
-			// Unary minus if:
-			// 1. First token
-			// 2. After an operator
-			// 3. After opening parenthesis
 			if (index == 0) return true;
 			
 			var previousToken = tokens[index - 1];
@@ -254,7 +244,7 @@ namespace ComputorV2.Core.Math
 			return op switch
 			{
 				"+" or "-" => 1,
-				"*" or "/" => 2,
+				"*" or "/" or "%" => 2,
 				"^" => 3,
 				_ => 0
 			};
@@ -299,10 +289,9 @@ namespace ComputorV2.Core.Math
 				}
 				else if (token == "i")
 				{
-					// Handle 'i' as the imaginary unit constant
 					stack.Push(ComplexNumber.I);
 				}
-				else if ("+-*/^".Contains(token))
+				else if ("+-*/%^".Contains(token))
 				{
 					if (stack.Count < 2)
 						throw new InvalidOperationException($"Insufficient operands for operator: {token}");
@@ -332,6 +321,7 @@ namespace ComputorV2.Core.Math
 				"-" => left.Subtract(right),
 				"*" => left.Multiply(right),
 				"/" => left.Divide(right),
+				"%" => left.Modulo(right),
 				"^" => ApplyPowerOperation(left, right),
 				_ => throw new ArgumentException($"Unknown operator: {op}")
 			};
@@ -486,7 +476,7 @@ namespace ComputorV2.Core.Math
 			string variable = match.Groups[2].Value;
 
 			string resolvedExpression = ResolveVariablesExcept(expression, variable);
-
+			
 			var function = new Function(functionName, variable, resolvedExpression);
 			_functions[functionName] = function;
 
@@ -647,6 +637,7 @@ namespace ComputorV2.Core.Math
 		{
 			var tokenizer = new Tokenizer();
 			var tokens = tokenizer.Tokenize(expression);
+			bool hasResolvedAnyVariable = false;
 
 			for (int i = 0; i < tokens.Count; i++)
 			{
@@ -684,6 +675,7 @@ namespace ComputorV2.Core.Math
 						{
 							tokens[i] = value.ToString();
 						}
+						hasResolvedAnyVariable = true;
 					}
 					else
 					{
@@ -692,21 +684,25 @@ namespace ComputorV2.Core.Math
 				}
 			}
 			
+			if (!hasResolvedAnyVariable)
+			{
+				return expression;
+			}
+			
 			var result = string.Join(" ", tokens);
 			return result;
 		}
 
 		private bool IsComplexNumberExpression(string expression)
 		{
-			// Check for patterns that indicate complex number expressions with 'i'
 			var complexPatterns = new[]
 			{
-				@"\bi\b",                         // standalone 'i'
-				@"\d+\s*\*\s*i\b",               // number * i
-				@"\d+i\b",                        // implicit multiplication like 4i
-				@"[+-]\s*i\b",                    // +i or -i
-				@"[+-]\s*\d+\s*\*\s*i\b",        // +/- number * i
-				@"[+-]\s*\d+i\b"                 // +/- numberi
+				@"\bi\b",
+				@"\d+\s*\*\s*i\b",
+				@"\d+i\b",
+				@"[+-]\s*i\b",
+				@"[+-]\s*\d+\s*\*\s*i\b",
+				@"[+-]\s*\d+i\b"
 			};
 
 			foreach (var pattern in complexPatterns)

@@ -20,7 +20,7 @@ namespace ComputorV2.Tests.Core.Types
 		{
 			var a = new RationalNumber(2);
 			var b = new RationalNumber(3);
-			var poly = new Polynomial(a, b); // 2x + 3
+			var poly = new Polynomial(a, b);
 			
 			Assert.Equal("2 * X + 3", poly.ToString());
 			Assert.Equal(1, poly.Degree);
@@ -32,7 +32,7 @@ namespace ComputorV2.Tests.Core.Types
 			var a = new RationalNumber(1);
 			var b = new RationalNumber(-2);
 			var c = new RationalNumber(1);
-			var poly = new Polynomial(a, b, c); // x^2 - 2x + 1
+			var poly = new Polynomial(a, b, c);
 			
 			Assert.Equal("X^2 - 2 * X + 1", poly.ToString());
 			Assert.Equal(2, poly.Degree);
@@ -41,8 +41,8 @@ namespace ComputorV2.Tests.Core.Types
 		[Fact]
 		public void Addition_WorksCorrectly()
 		{
-			var poly1 = new Polynomial(new RationalNumber(1), new RationalNumber(2)); // x + 2
-			var poly2 = new Polynomial(new RationalNumber(1), new RationalNumber(3)); // x + 3
+			var poly1 = new Polynomial(new RationalNumber(1), new RationalNumber(2));
+			var poly2 = new Polynomial(new RationalNumber(1), new RationalNumber(3));
 			
 			var result = poly1.Add(poly2);
 			
@@ -52,8 +52,8 @@ namespace ComputorV2.Tests.Core.Types
 		[Fact]
 		public void Subtraction_WorksCorrectly()
 		{
-			var poly1 = new Polynomial(new RationalNumber(2), new RationalNumber(5)); // 2x + 5
-			var poly2 = new Polynomial(new RationalNumber(1), new RationalNumber(3)); // x + 3
+			var poly1 = new Polynomial(new RationalNumber(2), new RationalNumber(5));
+			var poly2 = new Polynomial(new RationalNumber(1), new RationalNumber(3));
 			
 			var result = poly1.Subtract(poly2);
 			
@@ -63,8 +63,8 @@ namespace ComputorV2.Tests.Core.Types
 		[Fact]
 		public void Multiplication_WorksCorrectly()
 		{
-			var poly1 = new Polynomial(new RationalNumber(1), new RationalNumber(1)); // x + 1
-			var poly2 = new Polynomial(new RationalNumber(1), new RationalNumber(2)); // x + 2
+			var poly1 = new Polynomial(new RationalNumber(1), new RationalNumber(1));
+			var poly2 = new Polynomial(new RationalNumber(1), new RationalNumber(2));
 			
 			var result = poly1.Multiply(poly2);
 			
@@ -84,18 +84,17 @@ namespace ComputorV2.Tests.Core.Types
 		[Fact]
 		public void Integration_WorksCorrectly()
 		{
-			var poly = new Polynomial(new RationalNumber(1), new RationalNumber(2)); // x + 2
+			var poly = new Polynomial(new RationalNumber(1), new RationalNumber(2));
 			
 			var integral = poly.Integrate();
-			
-			// Should be (1/2)x^2 + 2x + C (with C=0)
+
 			Assert.Equal("1/2 * X^2 + 2 * X", integral.ToString());
 		}
 
 		[Fact]
 		public void SolveDegree0_ReturnsEmptyForNonZero()
 		{
-			var poly = new Polynomial(new RationalNumber(5)); // 5 = 0
+			var poly = new Polynomial(new RationalNumber(5));
 			
 			var solutions = poly.Solve();
 			
@@ -105,7 +104,7 @@ namespace ComputorV2.Tests.Core.Types
 		[Fact]
 		public void SolveDegree0_ReturnsInfiniteForZero()
 		{
-			var poly = new Polynomial(new RationalNumber(0)); // 0 = 0
+			var poly = new Polynomial(new RationalNumber(0));
 			
 			var solutions = poly.Solve();
 			
@@ -116,7 +115,7 @@ namespace ComputorV2.Tests.Core.Types
 		[Fact]
 		public void SolveDegree1_WorksCorrectly()
 		{
-			var poly = new Polynomial(new RationalNumber(2), new RationalNumber(-4)); // 2x - 4 = 0
+			var poly = new Polynomial(new RationalNumber(2), new RationalNumber(-4));
 			
 			var solutions = poly.Solve();
 			
@@ -132,7 +131,6 @@ namespace ComputorV2.Tests.Core.Types
 			var solutions = poly.Solve();
 			
 			Assert.Equal(2, solutions.Count);
-			// Solutions should be x = 2 and x = -2
 		}
 
 		[Fact]
@@ -154,7 +152,6 @@ namespace ComputorV2.Tests.Core.Types
 			var solutions = poly.Solve();
 			
 			Assert.Equal(2, solutions.Count);
-			// Solutions should be complex: x = i and x = -i
 			Assert.True(solutions[0] is ComplexNumber);
 			Assert.True(solutions[1] is ComplexNumber);
 		}
@@ -177,9 +174,9 @@ namespace ComputorV2.Tests.Core.Types
 			var terms = poly.GetTerms();
 			
 			Assert.Equal(3, terms.Count);
-			Assert.Equal("3", terms[0].ToString()); // constant term
-			Assert.Equal("-2", terms[1].ToString()); // x coefficient  
-			Assert.Equal("1", terms[2].ToString()); // x^2 coefficient
+			Assert.Equal("3", terms[0].ToString());
+			Assert.Equal("-2", terms[1].ToString());
+			Assert.Equal("1", terms[2].ToString());
 		}
 
 		[Fact]

@@ -5,7 +5,6 @@ namespace ComputorV2.Tests
 {
 	public class HistoryManagerTests
 	{
-		// Naming convention: MethodName_Scenario_ExpectedBehavior
 		[Fact]
 		public void Constructor_WithValidCapacity_InitializesCorrectly()
 		{
@@ -270,7 +269,6 @@ namespace ComputorV2.Tests
 			Assert.Null(history.GetCurrentCommand());
 		}
 
-		// Persistency tests
 		[Fact]
 		public void SaveToFile_WithValidPath_CreatesFileWithCommands()
 		{

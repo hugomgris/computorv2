@@ -8,6 +8,7 @@ namespace ComputorV2.Core.Types
 		public abstract MathValue Subtract(MathValue other);
 		public abstract MathValue Multiply(MathValue other);
 		public abstract MathValue Divide(MathValue other);
+		public abstract MathValue Modulo(MathValue other);
 		public abstract MathValue Power(int exponent);
 		public abstract MathValue Negate();
 

@@ -10,7 +10,6 @@ namespace ComputorV2.Tests
         [Fact]
         public void TestNegativeComplexNumber()
         {
-            // Issue 1: varB = -4i - 4 is not correctly parsed
             var evaluator = new MathEvaluator();
             var result = evaluator.Evaluate("-4i - 4");
             
@@ -24,7 +23,6 @@ namespace ComputorV2.Tests
         [Fact]
         public void TestSingleLetterVariable()
         {
-            // Issue 2: input 'a' returns '1' - is this correct?
             var evaluator = new MathEvaluator();
             
             try
@@ -32,38 +30,29 @@ namespace ComputorV2.Tests
                 var result = evaluator.Evaluate("a");
                 Console.WriteLine($"Single letter 'a' result: {result} (Type: {result.GetType().Name})");
                 
-                // This should probably throw an exception for undefined variable
-                // Let's see what the current behavior is...
                 if (result is Polynomial poly)
                 {
                     Console.WriteLine($"Polynomial toString: {poly}");
                 }
                 
-                // For ComputorV2, undefined variables should probably be treated as errors
-                // Assert.Throws<ArgumentException>(() => evaluator.Evaluate("a"));
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Exception for 'a': {ex.Message}");
-                // This might be the expected behavior
             }
         }
 
         [Fact]
         public void TestDecimalDisplay()
         {
-            // Test that decimal inputs are displayed as decimals, not fractions
             var evaluator = new MathEvaluator();
             
-            // Test case 1: 4.242
             var result1 = evaluator.Evaluate("4.242");
             Console.WriteLine($"4.242 result: {result1} (Type: {result1.GetType().Name})");
-            
-            // Test case 2: -4.3
+
             var result2 = evaluator.Evaluate("-4.3");
             Console.WriteLine($"-4.3 result: {result2} (Type: {result2.GetType().Name})");
             
-            // Test case 3: Assignment with decimals through REPL
             var repl = new ComputorV2.Interactive.REPL();
             var replOutput1 = repl.ProcessCommand("varB = 4.242");
             var replOutput2 = repl.ProcessCommand("varC = -4.3");
@@ -74,7 +63,6 @@ namespace ComputorV2.Tests
         [Fact]
         public void DebugComplexNumberDetection()
         {
-            // Debug why -4.3 is detected as complex
             var evaluator = new MathEvaluator();
             
             var isComplex1 = IsComplexNumberExpression(evaluator, "4.242");
@@ -82,14 +70,12 @@ namespace ComputorV2.Tests
             Console.WriteLine($"4.242 detected as complex: {isComplex1}");
             Console.WriteLine($"-4.3 detected as complex: {isComplex2}");
             
-            // Check tokens
             var tokenizer = new ComputorV2.Core.Lexing.Tokenizer();
             var tokens1 = tokenizer.Tokenize("4.242");
             var tokens2 = tokenizer.Tokenize("-4.3");
             Console.WriteLine($"4.242 tokens: [{string.Join(", ", tokens1)}]");
             Console.WriteLine($"-4.3 tokens: [{string.Join(", ", tokens2)}]");
             
-            // Test simple operations
             var result1 = evaluator.Evaluate("5");
             var result2 = evaluator.Evaluate("-5");  
             var result3 = evaluator.Evaluate("0 - 5");
@@ -100,7 +86,6 @@ namespace ComputorV2.Tests
         
         private bool IsComplexNumberExpression(MathEvaluator evaluator, string expression)
         {
-            // Use reflection to access private method
             var method = evaluator.GetType().GetMethod("IsComplexNumberExpression", 
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             return (bool)method.Invoke(evaluator, new object[] { expression });
@@ -109,7 +94,6 @@ namespace ComputorV2.Tests
         [Fact]
         public void TestNegativeImaginaryUnit()
         {
-            // Test specifically negative i patterns
             var evaluator = new MathEvaluator();
             
             try
