@@ -67,6 +67,16 @@ namespace ComputorV2.Core.Math
 				var tokenizer = new Tokenizer();
 				var tokens = tokenizer.Tokenize(expression);
 				
+				// Special case: handle simple negative numbers like "-4.3"
+				if (tokens.Count == 2 && tokens[0] == "-" && IsNumber(tokens[1]))
+				{
+					string negativeNumber = "-" + tokens[1];
+					if (RationalNumber.TryParse(negativeNumber, out RationalNumber? rational))
+					{
+						return rational!;
+					}
+				}
+				
 				bool hasVariables = tokens.Any(t => IsVariableToken(t) && (_variables.ContainsKey(t) || t == "i"));
 				bool hasUnknownVariables = tokens.Any(t => IsVariableToken(t) && !_variables.ContainsKey(t) && t != "i");
 				

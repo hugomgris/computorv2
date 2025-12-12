@@ -44,24 +44,28 @@ namespace ComputorV2.Core.Types
 				return;
 			}
 
-			string[] parts = valueStr.Split('.');
-			long wholePart = string.IsNullOrEmpty(parts[0]) ? 0 : long.Parse(parts[0]);
-			string fractionalPart = parts[1];
-			
-			long denominator = 1;
-			for (int i = 0; i < fractionalPart.Length; i++)
-			{
-				denominator *= 10;
-			}
-			
-			long numerator = wholePart * denominator + long.Parse(fractionalPart);
-			
-			if (value < 0 && wholePart == 0)
-			{
-				numerator = -numerator;
-			}
-
-			long gcd = GreatestCommonDivisor(CustomMath.Abs(numerator), denominator);
+		string[] parts = valueStr.Split('.');
+		long wholePart = string.IsNullOrEmpty(parts[0]) ? 0 : long.Parse(parts[0]);
+		string fractionalPart = parts[1];
+		
+		long denominator = 1;
+		for (int i = 0; i < fractionalPart.Length; i++)
+		{
+			denominator *= 10;
+		}
+		
+		// Handle negative numbers correctly
+		long numerator;
+		if (value < 0)
+		{
+			// For negative numbers, both whole and fractional parts contribute to the negative value
+			long absWholePart = wholePart < 0 ? -wholePart : wholePart;
+			numerator = -(absWholePart * denominator + long.Parse(fractionalPart));
+		}
+		else
+		{
+			numerator = wholePart * denominator + long.Parse(fractionalPart);
+		}			long gcd = GreatestCommonDivisor(CustomMath.Abs(numerator), denominator);
 			_numerator = numerator / gcd;
 			_denominator = denominator / gcd;
 		}

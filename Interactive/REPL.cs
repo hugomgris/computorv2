@@ -85,14 +85,18 @@ namespace ComputorV2.Interactive
 			return command == "exit" || command == "quit" || command == "q";
 		}
 
-		private string ProcessCommand(string input)
+		public string ProcessCommand(string input)
 		{
 			var result = _mathEvaluator.Evaluate(input);
 			
 			var assignmentInfo = _mathEvaluator.GetLastAssignmentInfo();
 			if (assignmentInfo != null)
 			{
-				return $"Variable '{assignmentInfo.Variable}' assigned: {assignmentInfo.Value}";
+				// For RationalNumber assignments, prefer decimal display format for better readability
+				string valueDisplay = assignmentInfo.Value is ComputorV2.Core.Types.RationalNumber rational 
+					? rational.ToDecimalString() 
+					: assignmentInfo.Value.ToString();
+				return $"Variable '{assignmentInfo.Variable}' assigned: {valueDisplay}";
 			}
 
 			if (input.Contains('=') && input.Contains('(') && input.Contains(')'))
@@ -105,6 +109,18 @@ namespace ComputorV2.Interactive
 					string functionName = match.Groups[1].Value;
 					return $"Function '{functionName}' defined: {result}";
 				}
+			}
+
+			// For arithmetic results, also prefer decimal display format for RationalNumbers
+			if (result is ComputorV2.Core.Types.RationalNumber resultRational)
+			{
+				return resultRational.ToDecimalString();
+			}
+			
+			// Handle ComplexNumbers that represent real numbers (zero imaginary part)
+			if (result is ComputorV2.Core.Types.ComplexNumber resultComplex && resultComplex.IsReal)
+			{
+				return resultComplex.Real.ToDecimalString();
 			}
 
 			return $"{result}";
