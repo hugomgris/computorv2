@@ -1,41 +1,50 @@
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using ComputorV2.IO;
 using ComputorV2.Core.Math;
+using ComputorV2.IO;
 
 namespace ComputorV2.Interactive
 {
 	public class REPL
 	{
-		private readonly DisplayManager				_displayManager;
-		private readonly HistoryManager				_historyManager;
-		private readonly InputHandler				_inputHandler;
-		private readonly MathEvaluator				_mathEvaluator;
-		private bool 								_isRunning;
+		private readonly DisplayManager	_displayManager;
+		private readonly HistoryManager	_historyManager;
+		private readonly InputHandler	_inputHandler;
+		private readonly MathEvaluator	_mathEvaluator;
+		private readonly HelpSystem		_helpSystem;
+		private bool	_isRunning;
 
 		public REPL()
 		{
-			_displayManager = new DisplayManager();
 			_historyManager = new HistoryManager();
+			_displayManager = new DisplayManager(_historyManager);
+			_historyManager.SetDisplayManagerReference(_displayManager); // I don't like this circular dependency but 1)call the cops and 2)getting rid of this would be a pain in my butt
 			_inputHandler = new InputHandler(_displayManager, _historyManager);
 			_mathEvaluator = new MathEvaluator();
+			_helpSystem = new HelpSystem();
 			_isRunning = false;
 
 			try
 			{
 				_historyManager.LoadFromDefaultLocation();
-				Console.WriteLine($"Loaded {_historyManager.Count} commands from history."); // DEBUG
 			}
 			catch (Exception)
 			{
 				Console.WriteLine("Starting with empty history");
+			}
+
+			try
+			{
+				_helpSystem.LoadFromDefaultLocation();
+			}
+			catch (Exception)
+			{
+				_displayManager.DisplayInColor($"Warning: Help file not found (path: {_helpSystem.GetDefaultHelpFilePath()})", ConsoleColor.DarkYellow);
 			}
 		}
 
 		public void Run()
 		{
 			_displayManager.DisplayHeader();
+			_displayManager.DisplayCommandCount();
 			_displayManager.DisplayWelcome();
 			_isRunning = true;
 
@@ -51,18 +60,29 @@ namespace ComputorV2.Interactive
 						break;
 					}
 
+					if (IsHelpCommand(input))
+					{
+						_helpSystem.Help();
+						continue;
+					}
+
+					if (IsHistoryClearCommand(input))
+					{
+						_historyManager.ClearHistory();
+						continue;
+					}
+
 					if (string.IsNullOrWhiteSpace(input))
 					{
 						continue;
 					}
 
 					string result = ProcessCommand(input);
-
 					_historyManager.AddCommand(input);
-
-					if(!string.IsNullOrEmpty(result))
+					
+					if (!string.IsNullOrEmpty(result))
 					{
-						_displayManager.DisplayResult(result);
+						_displayManager.DisplayResult(result, ConsoleColor.DarkCyan);
 					}
 				}
 				catch (Exception ex)
@@ -85,36 +105,38 @@ namespace ComputorV2.Interactive
 			return command == "exit" || command == "quit" || command == "q";
 		}
 
+		private bool IsHelpCommand(string input)
+		{
+			if (string.IsNullOrEmpty(input))
+			{
+				return (false);
+			}
+
+			string command = input.Trim().ToLower();
+			return command == "help" || command == "h";
+		}
+
+		private bool IsHistoryClearCommand(string input)
+		{
+			if (string.IsNullOrEmpty(input))
+			{
+				return (false);
+			}
+
+			string command = input.Trim().ToLower();
+			return command == "clearhistory" || command == "clear history" || command == "ch";
+		}
+
 		private string ProcessCommand(string input)
 		{
-			var result = _mathEvaluator.Evaluate(input);
-			
-			var assignmentInfo = _mathEvaluator.GetLastAssignmentInfo();
-			if (assignmentInfo != null)
-			{
-				return $"Variable '{assignmentInfo.Variable}' assigned: {assignmentInfo.Value}";
-			}
-
-			if (input.Contains('=') && input.Contains('(') && input.Contains(')'))
-			{
-				var parts = input.Split('=');
-				var leftSide = parts[0].Trim();
-				var match = System.Text.RegularExpressions.Regex.Match(leftSide, @"^([a-zA-Z][a-zA-Z0-9]*)\s*\(");
-				if (match.Success)
-				{
-					string functionName = match.Groups[1].Value;
-					return $"Function '{functionName}' defined: {result}";
-				}
-			}
-
-			return $"{result}";
+			return ($"Input: {input}");
 		}
-		
+
 		public void Stop()
 		{
 			_isRunning = false;
 			_historyManager.SaveToDefaultLocation();
-			_displayManager.DisplayResult("Goodbye!");
+			_displayManager.DisplayInColor("Goodbye!", ConsoleColor.DarkYellow);
 		}
 	}
 }

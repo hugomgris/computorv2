@@ -1,4 +1,4 @@
-using ComputorV2.Core.Types;
+//using ComputorV2.Core.Types;
 
 namespace ComputorV2.Core.Math
 {
@@ -41,7 +41,7 @@ namespace ComputorV2.Core.Math
 			return (int)(value + 0.5);
 		}
 
-		public static void DrawPolynomialGraph(Polynomial polynomial, double xMin = -10, double xMax = 10, int width = 60, int height = 20)
+		/* public static void DrawPolynomialGraph(Polynomial polynomial, double xMin = -10, double xMax = 10, int width = 60, int height = 20)
 		{
 			Console.WriteLine("\nGraphical representation:");
 			Console.WriteLine(new string('=', width + 10));
@@ -225,6 +225,6 @@ namespace ComputorV2.Core.Math
 			}
 			
 			return (a + b) / 2.0;
-		}
+		} */
 	}
 }
