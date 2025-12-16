@@ -41,6 +41,22 @@ namespace ComputorV2.Core.Math
 			return (int)(value + 0.5);
 		}
 
+		public static long GreatestCommonDivisor(long a, long b)
+		{
+			while (b != 0)
+			{
+				long temp = b;
+				b = a % b;
+				a = temp;
+			}
+			return a;
+		}
+
+		public static long LeastCommonMultiple(long a, long b)
+		{
+			return (a * b) / GreatestCommonDivisor(a, b);
+		}
+
 		/* public static void DrawPolynomialGraph(Polynomial polynomial, double xMin = -10, double xMax = 10, int width = 60, int height = 20)
 		{
 			Console.WriteLine("\nGraphical representation:");

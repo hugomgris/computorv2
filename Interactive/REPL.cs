@@ -1,12 +1,15 @@
 using ComputorV2.Core.Math;
+using ComputorV2.Core.Lexing;
 using ComputorV2.IO;
 
 namespace ComputorV2.Interactive
 {
 	public class REPL
 	{
-		private readonly DisplayManager	_displayManager;
 		private readonly HistoryManager	_historyManager;
+		private readonly Parser			_parser;
+		private readonly Tokenizer		_tokenizer;
+		private readonly DisplayManager	_displayManager;
 		private readonly InputHandler	_inputHandler;
 		private readonly MathEvaluator	_mathEvaluator;
 		private readonly HelpSystem		_helpSystem;
@@ -15,10 +18,12 @@ namespace ComputorV2.Interactive
 		public REPL()
 		{
 			_historyManager = new HistoryManager();
+			_parser = new Parser();
+			_tokenizer = new Tokenizer();
 			_displayManager = new DisplayManager(_historyManager);
 			_historyManager.SetDisplayManagerReference(_displayManager); // I don't like this circular dependency but 1)call the cops and 2)getting rid of this would be a pain in my butt
 			_inputHandler = new InputHandler(_displayManager, _historyManager);
-			_mathEvaluator = new MathEvaluator();
+			_mathEvaluator = new MathEvaluator(_parser, _tokenizer);
 			_helpSystem = new HelpSystem();
 			_isRunning = false;
 
@@ -69,6 +74,24 @@ namespace ComputorV2.Interactive
 					if (IsHistoryClearCommand(input))
 					{
 						_historyManager.ClearHistory();
+						continue;
+					}
+
+					if (IsListVariableCommand(input))
+					{
+						_mathEvaluator.PrintVariableList();
+						continue;
+					}
+
+					if (IsListFunctionCommand(input))
+					{
+						_mathEvaluator.PrintFunctionList();
+						continue;
+					}
+
+					if (IsListAllCommand(input))
+					{
+						_mathEvaluator.PrintAllLists();
 						continue;
 					}
 
@@ -127,9 +150,63 @@ namespace ComputorV2.Interactive
 			return command == "clearhistory" || command == "clear history" || command == "ch";
 		}
 
+		private bool IsListVariableCommand(string input)
+		{
+			if (string.IsNullOrEmpty(input))
+			{
+				return (false);
+			}
+
+			string command = input.Trim().ToLower();
+			return command == "listvariables" || command == "lv";
+		}
+
+		private bool IsListFunctionCommand(string input)
+		{
+			if (string.IsNullOrEmpty(input))
+			{
+				return (false);
+			}
+
+			string command = input.Trim().ToLower();
+			return command == "listfunctions" || command == "lf";
+		}
+
+		private bool IsListAllCommand(string input)
+		{
+			if (string.IsNullOrEmpty(input))
+			{
+				return (false);
+			}
+
+			string command = input.Trim().ToLower();
+			return command == "listall" || command == "la";
+		}
+
 		private string ProcessCommand(string input)
 		{
-			return ($"Input: {input}");
+			string result;
+			string trimmed = input.Trim().Replace(" ", "");
+			
+			if (input.Contains('?'))
+				result = _mathEvaluator.Compute(trimmed);
+			else if (input.Contains('='))
+				result = _mathEvaluator.Assign(trimmed);
+			else
+				result = "";
+			/* cmd_type type = _parser.DetectInputType(input);
+			switch (type)
+			{
+				case cmd_type.FUNCTION:
+					return ($"{input} is of type FUNCTION");
+
+				case cmd_type.RATIONAL:
+					return ($"{input} is of type RATIONAL");
+
+				default:
+					return($"{input} is of UNKNOWN type");
+			} */
+			return result;
 		}
 
 		public void Stop()
