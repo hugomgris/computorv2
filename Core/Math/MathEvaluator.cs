@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Collections.Generic;
 using System.Linq;
 using ComputorV2.Core.Types;
@@ -45,31 +46,37 @@ namespace ComputorV2.Core.Math
 
 		private string StoreVariable(string input)
 		{
-			
-			
-			
-			if (_parser.DetectInputType(input) == cmd_type.MATRIX)
+			string[] parts = input.Split('=');
+			if (parts.Length != 2)
+				throw new ArgumentException($"RationalNumber: Parser: expression can only contain one '=': {input}", nameof(input));
+
+			if (_parser.ValidateVariableName(parts[0]) == var_error.INVALIDCHAR)
+				throw new ArgumentException($"Assignation: variable name can only contain alphanumeric characters: {input}", nameof(input));
+			else if (_parser.ValidateVariableName(parts[0]) == var_error.HASICHAR)
+				throw new ArgumentException($"Assignation: variable name can not contain 'i' character: {input}", nameof(input));
+			else if (_parser.ValidateVariableName(parts[0]) == var_error.NOALPHA)
+				throw new ArgumentException($"Assignation: variable name must contain at least one alphabetical character: {input}", nameof(input));
+
+			if (HasVariables(parts[1]))
+				parts[1] = SubstituteVariables(parts[1]);
+
+			if (_parser.DetectValueType(parts[1]) == cmd_type.MATRIX)
 				return $"Storing MATRIX variable from {input}";
-			else if (_parser.DetectInputType(input) == cmd_type.COMPLEX)
+			else if (_parser.DetectValueType(parts[1]) == cmd_type.COMPLEX)
 				return $"Storing COMPLEX variable from {input}";
-			else if (_parser.DetectInputType(input) == cmd_type.RATIONAL)
-				return StoreRational(input);
+			else if (_parser.DetectValueType(parts[1]) == cmd_type.RATIONAL)
+				return StoreRational(parts);
 			else
 				return "";
 		}
 
-		private string StoreRational(string input)
-		{
-			string[] parts = input.Split('=');
-			if (parts.Length != 2)
-				throw new ArgumentException($"RationalNumber: Parser: expression can only contain one '=': {input}", nameof(input));
-			
+		private string StoreRational(string[] parts)
+		{			
 			string name = parts[0];
 
-			List<string> postfix = ConvertToPostfix(parts[1]);
-			RationalNumber resolvedExpr = (RationalNumber)ResolvePostfix(postfix);
+			Postfix postfix = new Postfix(parts[1]);
 
-			RationalNumber value = new RationalNumber(resolvedExpr);
+			RationalNumber value = new RationalNumber(postfix.Calculate());
 
 			_variables[name] = value;
 
@@ -83,25 +90,43 @@ namespace ComputorV2.Core.Math
 
 		#endregion
 
-		#region POSTFIX management
+		#region Variable substitution
 
-		private List<string> ConvertToPostfix(string expr)
+		private bool HasVariables(string expression)
 		{
-			List<string> rawTokens = _tokenizer.MakeRawTokens(expr);
-			var operators = new Stack<string>();
-			var output = new Queue<string>();
-			
-			for (int i = 0; i < rawTokens.Count; i++)
+			foreach (char c in expression)
 			{
-
+				if (Char.IsLetter(c) && c != 'i')
+					return true;
 			}
 
-			return rawTokens;
+			return false;
 		}
 
-		private MathValue ResolvePostfix(List<string> tokens)
+		private string SubstituteVariables(string expression)
 		{
-			return RationalNumber.One;
+			StringBuilder sb = new StringBuilder();
+
+			foreach (char c in expression)
+			{
+				if (Char.IsLetter(c))
+				{
+					if (_variables.ContainsKey(c.ToString()))
+					{
+						sb.Append(_variables[c.ToString()]);
+					}
+					else
+					{
+						throw new ArgumentException($"Error: Variable Subtitution: expression contains undefined variables: {expression}", nameof(expression));
+					}
+				}
+				else
+				{
+					sb.Append(c);
+				}
+			}
+
+			return sb.ToString();
 		}
 
 		#endregion

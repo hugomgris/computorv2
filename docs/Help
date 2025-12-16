@@ -5,4 +5,13 @@ This is a test.
 
 If you want to compute, input must end in '=?'
 	[EX] a + b =?
-	
+
+--VARIABLES
+
+Variable declaration follows the syntax VAR=VALUE.
+
+Variable names can only contain alphanumeric characters and must contain at least one alphabetic character.
+	[EX] var1 = 42 ✔
+	[EX] VAR42 = 0.4242 ✔
+	[EX] a = b + c ✔
+	[EX] 42 = 4 + 2i ✖
