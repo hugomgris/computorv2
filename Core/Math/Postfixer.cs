@@ -6,10 +6,10 @@ using System.Text.RegularExpressions;
 // Found this infix to postfix code in stackoverflow (credit: Sean (users/214980/sean)). Didn't want to write it myself, life is already miserable as it is.
 // https://stackoverflow.com/questions/1438030/infix-to-postfix-converter
 //
-// Made a couple of edits to avoid compilation warnings (null values)
-// Expanded the Calculate() function to manage the Modulo operator (%), was throwing an error.
-//
-// TODO: make this work with complex numbers (i.e., with 'i' character)
+// Tweaks:
+//	-Made a couple of edits to avoid compilation warnings (null values)
+//	-Tokenization now handles expressions starting with negative numbers
+//	-Expanded the Calculate() function to manage the Modulo operator (%), was throwing an error.
 
 
 namespace ComputorV2.Core.Math
@@ -162,9 +162,27 @@ namespace ComputorV2.Core.Math
 			Stack<Token> tokens = new Stack<Token>();
 			string store = "";
 
+			int startsWithMinus = 0;
+			if (rawFormula[0] == '-')
+				startsWithMinus = 1;
+
 			// parse the formula into a stack of tokens
 			while (rawFormula.Length > 0)
 			{
+				if (startsWithMinus > 0)
+				{
+					int j = 1;
+					while (j < rawFormula.Length && Char.IsNumber(rawFormula[j])) j++;
+
+					store = rawFormula.Substring(0, j);
+					tokens.Push(new Numeric(Convert.ToDecimal(store)));
+
+					store = "";
+					startsWithMinus = 0;
+					rawFormula = rawFormula.Substring(j);
+					continue;
+				}
+				
 				string ThisChar = rawFormula.Substring(0, 1);
 
 				if (Regex.IsMatch(ThisChar, "[0-9\\.]"))
@@ -305,6 +323,7 @@ namespace ComputorV2.Core.Math
 			// get a reversed copy of the tokens
 			Stack<Token> postFixStack = new Stack<Token>(PostfixTokens);
 			Stack<Token> PostFixStack = new Stack<Token>();
+
 			while (postFixStack.Count > 0) PostFixStack.Push(postFixStack.Pop());
 
 			while (PostFixStack.Count > 0)

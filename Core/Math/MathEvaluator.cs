@@ -12,8 +12,7 @@ namespace ComputorV2.Core.Math
 		private readonly Parser							_parser;
 		private readonly Tokenizer						_tokenizer;
 		private Dictionary<string, MathValue>		_variables = new();
-		//private SortedDictionary<string, Function>	_functions = new();
-		//private AssignmentInfo?						_lastAssignment = null;
+		//private Dictionary<string, Function>	_functions = new();
 
 		public MathEvaluator(Parser parser, Tokenizer tokenizer)
 		{
@@ -43,7 +42,7 @@ namespace ComputorV2.Core.Math
 			if (_parser.DetectValueType(expression) == cmd_type.MATRIX)
 				return $"Computing MATRIX variable from {expression} (WIP)";
 			else if (_parser.DetectValueType(expression) == cmd_type.COMPLEX)
-				return $"Computing COMPLEX variable from {expression} (WIP)";
+				return ComputeComplex(expression);
 			else if (_parser.DetectValueType(expression) == cmd_type.RATIONAL)
 				return ComputeRational(expression);
 			else
@@ -55,6 +54,19 @@ namespace ComputorV2.Core.Math
 			Postfix postfix = new Postfix(expression.Replace("?", ""));
 
 			RationalNumber value = new RationalNumber(postfix.Calculate());
+
+			return value.ToString();
+		}
+
+		private string ComputeComplex(string expression)
+		{
+			expression = expression.Replace("?", "");
+			expression = expression.Replace("=", "");
+			Console.WriteLine(expression);
+			if (!ComplexNumber.TryParse(expression, out _) || expression.Count(x => x == 'i') > 1)
+				expression = _parser.SimplifyComplexExpression(expression);
+		
+			ComplexNumber value = new ComplexNumber(expression);
 
 			return value.ToString();
 		}
@@ -92,14 +104,14 @@ namespace ComputorV2.Core.Math
 				throw new ArgumentException($"Assignation: variable name can not contain 'i' character: {input}", nameof(input));
 			else if (_parser.ValidateVariableName(parts[0]) == var_error.NOALPHA)
 				throw new ArgumentException($"Assignation: variable name must contain at least one alphabetical character: {input}", nameof(input));
-
+			
 			if (HasVariables(parts[1]))
 				parts[1] = SubstituteVariables(parts[1]);
 
 			if (_parser.DetectValueType(parts[1]) == cmd_type.MATRIX)
 				return $"Storing MATRIX variable from {input}";
 			else if (_parser.DetectValueType(parts[1]) == cmd_type.COMPLEX)
-				return $"Storing COMPLEX variable from {input}";
+				return StoreComplex(parts);
 			else if (_parser.DetectValueType(parts[1]) == cmd_type.RATIONAL)
 				return StoreRational(parts);
 			else
@@ -115,6 +127,27 @@ namespace ComputorV2.Core.Math
 			RationalNumber value = new RationalNumber(postfix.Calculate());
 
 			_variables[name] = value;
+
+			return value.ToString();
+		}
+
+		private string StoreComplex(string[] parts)
+		{
+			string name = parts[0];
+			
+			if (!ComplexNumber.TryParse(parts[1], out _) || parts[1].Count(x => x == 'i') > 1)
+				parts[1] = _parser.SimplifyComplexExpression(parts[1]);
+		
+			ComplexNumber value = new ComplexNumber(parts[1]);
+
+			// Not sure if this is correct, but if a complex number has no imaginary part, I store it as a Rational
+			if (value.IsReal)
+			{
+				RationalNumber valueRational = new RationalNumber(value.Real);
+				_variables[name] = valueRational;
+			}
+			else
+				_variables[name] = value;
 
 			return value.ToString();
 		}
@@ -145,7 +178,7 @@ namespace ComputorV2.Core.Math
 
 			foreach (char c in expression)
 			{
-				if (Char.IsLetter(c))
+				if (Char.IsLetter(c) && c != 'i')
 				{
 					if (_variables.ContainsKey(c.ToString()))
 					{
@@ -153,7 +186,7 @@ namespace ComputorV2.Core.Math
 					}
 					else
 					{
-						throw new ArgumentException($"Error: Variable Subtitution: expression contains undefined variables: {expression}", nameof(expression));
+						throw new ArgumentException($"Variable Substitution: expression contains undefined variables: {expression}", nameof(expression));
 					}
 				}
 				else
@@ -206,6 +239,12 @@ namespace ComputorV2.Core.Math
 			PrintVariableList();
 			PrintFunctionList();
 		}
+
+		#endregion
+
+		#region Testing stuff
+
+		public Dictionary<string, MathValue> Variables => _variables;
 
 		#endregion
 	}
