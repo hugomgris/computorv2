@@ -3,10 +3,14 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 
-// Found this infix to postfix code in stackoverflow (credit: Sean (users/214980/sean)). Didn't want to write it myself, life is already miserable as it is
-// Made a couple of edits to avoid compilation warnings (null values)
-// TODO: make this work with complex numbers (i.e., with 'i' character)
+// Found this infix to postfix code in stackoverflow (credit: Sean (users/214980/sean)). Didn't want to write it myself, life is already miserable as it is.
 // https://stackoverflow.com/questions/1438030/infix-to-postfix-converter
+//
+// Made a couple of edits to avoid compilation warnings (null values)
+// Expanded the Calculate() function to manage the Modulo operator (%), was throwing an error.
+//
+// TODO: make this work with complex numbers (i.e., with 'i' character)
+
 
 namespace ComputorV2.Core.Math
 {
@@ -317,7 +321,8 @@ namespace ComputorV2.Core.Math
 					if (currentOperator.OperatorType == OperatorTypes.Plus ||
 						currentOperator.OperatorType == OperatorTypes.Minus ||
 						currentOperator.OperatorType == OperatorTypes.Multiply ||
-						currentOperator.OperatorType == OperatorTypes.Divide)
+						currentOperator.OperatorType == OperatorTypes.Divide ||
+						currentOperator.OperatorType == OperatorTypes.Modulus)
 					{
 						decimal FirstValue = EvaluationStack.Pop().Value;
 						decimal SecondValue = EvaluationStack.Pop().Value;
@@ -338,6 +343,10 @@ namespace ComputorV2.Core.Math
 						else if (currentOperator.OperatorType == OperatorTypes.Multiply)
 						{
 							Result = SecondValue * FirstValue;
+						}
+						else if (currentOperator.OperatorType == OperatorTypes.Modulus)
+						{
+							Result = SecondValue % FirstValue;
 						}
 						else
 						{

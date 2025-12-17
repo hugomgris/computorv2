@@ -188,7 +188,7 @@ namespace ComputorV2.Interactive
 			string result;
 			string trimmed = input.Trim().Replace(" ", "");
 			
-			if (input.Contains('?'))
+			if (input.Contains('=') && input.Contains('?'))
 				result = _mathEvaluator.Compute(trimmed);
 			else if (input.Contains('='))
 				result = _mathEvaluator.Assign(trimmed);

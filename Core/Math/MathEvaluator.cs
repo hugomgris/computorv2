@@ -11,11 +11,9 @@ namespace ComputorV2.Core.Math
 	{
 		private readonly Parser							_parser;
 		private readonly Tokenizer						_tokenizer;
-		private SortedDictionary<string, MathValue>		_variables = new();
+		private Dictionary<string, MathValue>		_variables = new();
 		//private SortedDictionary<string, Function>	_functions = new();
 		//private AssignmentInfo?						_lastAssignment = null;
-
-		#region Computation pipeline
 
 		public MathEvaluator(Parser parser, Tokenizer tokenizer)
 		{
@@ -23,9 +21,47 @@ namespace ComputorV2.Core.Math
 			_tokenizer = tokenizer;
 		}
 
+		#region Computation pipeline
+
 		public string Compute(string input)
 		{
-			return $"COMPUTE -> {input}";
+			string result;
+
+			if (_parser.DetectInputType(input) == cmd_type.FUNCTION) // TODO: input type detection (currently always returning FUNCTION)
+				result = ComputeFunction(input);
+			else
+				result = ComputeExpression(input);
+
+			return result;
+		}
+
+		private string ComputeExpression(string expression)
+		{
+			if (HasVariables(expression))
+				expression = SubstituteVariables(expression);
+
+			if (_parser.DetectValueType(expression) == cmd_type.MATRIX)
+				return $"Computing MATRIX variable from {expression} (WIP)";
+			else if (_parser.DetectValueType(expression) == cmd_type.COMPLEX)
+				return $"Computing COMPLEX variable from {expression} (WIP)";
+			else if (_parser.DetectValueType(expression) == cmd_type.RATIONAL)
+				return ComputeRational(expression);
+			else
+				return "";
+		}
+
+		private string ComputeRational(string expression)
+		{
+			Postfix postfix = new Postfix(expression.Replace("?", ""));
+
+			RationalNumber value = new RationalNumber(postfix.Calculate());
+
+			return value.ToString();
+		}
+
+		private string ComputeFunction(string input)
+		{
+			return $"Computing function (WIP)";
 		}
 
 		#endregion

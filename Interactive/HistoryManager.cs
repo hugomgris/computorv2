@@ -26,8 +26,11 @@ namespace ComputorV2.Interactive
 		public void AddCommand(string? command)
 		{
 			command = command?.Trim();
-			
+
 			if (string.IsNullOrEmpty(command)) return;
+
+			if (CheckIfCommandExists(command))
+				return;
 
 			if (_history.Count > 0 &&
 				string.Equals(command, _history[_history.Count - 1], StringComparison.OrdinalIgnoreCase))
@@ -38,7 +41,7 @@ namespace ComputorV2.Interactive
 				_history.RemoveAt(0);
 			}
 
-			_history.Add(command);
+			_history.Add(command.Replace(" ", ""));
 			ResetNavigation();
 		}
 
@@ -160,10 +163,22 @@ namespace ComputorV2.Interactive
 			}
 		}
 
+		private bool CheckIfCommandExists(string command)
+		{
+			foreach(string c in _history)
+			{
+				string trimmed = c.Replace(" ", "");
+				if (command.Replace(" ", "") == trimmed)
+					return true;
+			}
+			
+			return false;
+		}
+
 		private string GetDefaultHistoryFilePath()
 		{
-			var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-			return Path.Combine(homeDirectory, ".computorV2_history");
+			string currentDirectory = Directory.GetCurrentDirectory();
+			return currentDirectory + "/docs/.computorV2_History";
 		}
 
 		public void SaveToDefaultLocation()
