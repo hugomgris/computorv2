@@ -1,3 +1,6 @@
+using System;
+using System.Collections;
+
 using ComputorV2.Core.Math;
 using ComputorV2.Core.Lexing;
 using ComputorV2.IO;
@@ -90,7 +93,7 @@ namespace ComputorV2.Interactive
 					}
 
 					if (IsListAllCommand(input))
-					{
+					{ 
 						_mathEvaluator.PrintAllLists();
 						continue;
 					}
@@ -99,7 +102,7 @@ namespace ComputorV2.Interactive
 					{
 						continue;
 					}
-
+					
 					string result = ProcessCommand(input);
 					_historyManager.AddCommand(input);
 					

@@ -307,42 +307,42 @@ namespace ComputorV2.Core.Types
 
 		public override MathValue Add(MathValue other)
 		{
-			return other switch
-			{
-				RationalNumber r => this + r,
-				//ComplexNumber c => new ComplexNumber(this) + c,
-				_ => throw new ArgumentException($"Cannot add {GetType().Name} and {other.GetType().Name}")
-			};
+			if (other.GetType() == typeof(RationalNumber))
+				return this + (RationalNumber)other;
+			else if (other.GetType() == typeof(ComplexNumber))
+				return new ComplexNumber(this) + other;
+			
+			throw new ArgumentException($"Cannot add {GetType().Name} and {other.GetType().Name}");
 		}
 
 		public override MathValue Subtract(MathValue other)
 		{
-			return other switch
-			{
-				RationalNumber r => this - r,
-				//ComplexNumber c => new ComplexNumber(this) - c,
-				_ => throw new ArgumentException($"Cannot subtract {GetType().Name} and {other.GetType().Name}")
-			};
+			if (other.GetType() == typeof(RationalNumber))
+				return this - (RationalNumber)other;
+			else if (other.GetType() == typeof(ComplexNumber))
+				return new ComplexNumber(this) - other;
+			
+			throw new ArgumentException($"Cannot add {GetType().Name} and {other.GetType().Name}");
 		}
 
 		public override MathValue Multiply(MathValue other)
 		{
-			return other switch
-			{
-				RationalNumber r => this * r,
-				//ComplexNumber c => new ComplexNumber(this) * c,
-				_ => throw new ArgumentException($"Cannot multiply {GetType().Name} and {other.GetType().Name}")
-			};
+			if (other.GetType() == typeof(RationalNumber))
+				return this * (RationalNumber)other;
+			else if (other.GetType() == typeof(ComplexNumber))
+				return new ComplexNumber(this) * other;
+			
+			throw new ArgumentException($"Cannot add {GetType().Name} and {other.GetType().Name}");
 		}
 
 		public override MathValue Divide(MathValue other)
 		{
-			return other switch
-			{
-				RationalNumber r => this / r,
-				//ComplexNumber c => new ComplexNumber(this) / c,
-				_ => throw new ArgumentException($"Cannot divide {GetType().Name} and {other.GetType().Name}")
-			};
+			if (other.GetType() == typeof(RationalNumber))
+				return this / (RationalNumber)other;
+			else if (other.GetType() == typeof(ComplexNumber))
+				return new ComplexNumber(this) / other;
+			
+			throw new ArgumentException($"Cannot add {GetType().Name} and {other.GetType().Name}");
 		}
 
 		public override MathValue Modulo(MathValue other)

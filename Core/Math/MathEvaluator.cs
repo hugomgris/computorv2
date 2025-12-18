@@ -49,26 +49,23 @@ namespace ComputorV2.Core.Math
 				return "";
 		}
 
-		private string ComputeRational(string expression)
-		{
-			Postfix postfix = new Postfix(expression.Replace("?", ""));
+		private string ComputeRational(string expression) 
+		{	
+			List<string> tokens = _tokenizer.Tokenize(expression.Replace("?", "").Replace("=", ""));
+			Postfix postfix = new Postfix(tokens);
 
-			RationalNumber value = new RationalNumber(postfix.Calculate());
+			var result = (RationalNumber)postfix.Calculate();
 
-			return value.ToString();
+			return result.ToString();
 		}
 
 		private string ComputeComplex(string expression)
 		{
-			expression = expression.Replace("?", "");
-			expression = expression.Replace("=", "");
-			Console.WriteLine(expression);
-			if (!ComplexNumber.TryParse(expression, out _) || expression.Count(x => x == 'i') > 1)
-				expression = _parser.SimplifyComplexExpression(expression);
-		
-			ComplexNumber value = new ComplexNumber(expression);
+			List<string> tokens = _tokenizer.Tokenize(expression.Replace("?","").Replace("=",""));
+			Postfix postfix = new Postfix(tokens);
 
-			return value.ToString();
+			var result = (ComplexNumber)postfix.Calculate();
+			return result.ToString();
 		}
 
 		private string ComputeFunction(string input)
@@ -122,34 +119,26 @@ namespace ComputorV2.Core.Math
 		{			
 			string name = parts[0];
 
-			Postfix postfix = new Postfix(parts[1]);
+			List<string> tokens = _tokenizer.Tokenize(parts[1].Replace("?", "").Replace("=", ""));
+			Postfix postfix = new Postfix(tokens);
+			var result = (RationalNumber)postfix.Calculate();
 
-			RationalNumber value = new RationalNumber(postfix.Calculate());
+			_variables[name] = result;
 
-			_variables[name] = value;
-
-			return value.ToString();
+			return result.ToString();
 		}
 
 		private string StoreComplex(string[] parts)
 		{
 			string name = parts[0];
-			
-			if (!ComplexNumber.TryParse(parts[1], out _) || parts[1].Count(x => x == 'i') > 1)
-				parts[1] = _parser.SimplifyComplexExpression(parts[1]);
 		
-			ComplexNumber value = new ComplexNumber(parts[1]);
+			List<string> tokens = _tokenizer.Tokenize(parts[1].Replace("?", "").Replace("=", ""));
+			Postfix postfix = new Postfix(tokens);
+			var result = (ComplexNumber)postfix.Calculate();
 
-			// Not sure if this is correct, but if a complex number has no imaginary part, I store it as a Rational
-			if (value.IsReal)
-			{
-				RationalNumber valueRational = new RationalNumber(value.Real);
-				_variables[name] = valueRational;
-			}
-			else
-				_variables[name] = value;
+			_variables[name] = result;
 
-			return value.ToString();
+			return result.ToString();
 		}
 
 		private string StoreFunction(string input)

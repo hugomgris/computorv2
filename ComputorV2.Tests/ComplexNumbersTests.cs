@@ -28,7 +28,7 @@ namespace ComputorV2.Tests
 			_evaluator.Assign("c=-5+6i");
 			_evaluator.Assign("d=-i");
 			_evaluator.Assign("e=i");
-			//_evaluator.Assign("f=150 + 89i -8i +(8 * 800i)");
+			_evaluator.Assign("f=150 + 89i -8i +(8 * 800i)");
 
 			Dictionary<string, MathValue> vars = _evaluator.Variables;
 
@@ -37,14 +37,14 @@ namespace ComputorV2.Tests
 			Assert.True(vars.ContainsKey("c"));
 			Assert.True(vars.ContainsKey("d"));
 			Assert.True(vars.ContainsKey("e"));
-			//Assert.True(vars.ContainsKey("f")); 
+			Assert.True(vars.ContainsKey("f")); 
 
 			Assert.Equal("3i", vars["a"].ToString());
 			Assert.Equal("2+2i", vars["b"].ToString());
 			Assert.Equal("-5+6i", vars["c"].ToString());
 			Assert.Equal("-i", vars["d"].ToString());
 			Assert.Equal("i", vars["e"].ToString());
-			//Assert.Equal("150+6481i", vars["f"].ToString());
+			Assert.Equal("150+6481i", vars["f"].ToString());
 		}
 
 		[Fact]
@@ -53,8 +53,5 @@ namespace ComputorV2.Tests
 			ComplexNumber r1 = new ComplexNumber(_evaluator.Compute("2i-5+38+10*10i+2625"));
 			Assert.Equal(r1, new ComplexNumber(2658, 102));
 		}
-
-		// FAILING TESTS ARE DUE TO COMPLEX EXPRESSION SIMPLIFICATION
-		// (need to add parenthesis handling at fix whatever is happening with the multiplication of i values)
 	}
 }
