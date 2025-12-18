@@ -29,23 +29,18 @@ OBJ_DIR     = obj
 
 CSPROJ      = $(PROJECT).csproj
 SOURCES     = 	Program.cs							\
+				Core/Lexing/Parser.cs				\
+				Core/Lexing/Tokenizer.cs			\
 				Core/Math/CustomMath.cs				\
 				Core/Math/MathEvaluator.cs			\
-				Core/Parsing/Parser.cs				\
 				Core/Types/MathValue.cs				\
-				Core/Types/IRationalNumber.cs		\
 				Core/Types/RationalNumber.cs		\
-				Core/Types/IComplexNumber.cs		\
-				Core/Types/ComplexNumber.cs			\
-				Core/Types/Polynomial.cs			\
-				Core/Types/Function.cs				\
-				Core/Types/Matrix.cs				\
-				IO/DisplayManager.cs				\
-				IO/InputHandler.cs					\
 				Interactive/HelpSystem.cs			\
 				Interactive/HistoryManager.cs		\
 				Interactive/REPL.cs					\
-				Core/Lexing/Tokenizer.cs			\
+				IO/DisplayManager.cs				\
+				IO/InputHandler.cs					\
+
 
 EXECUTABLE  = $(BUILD_DIR)/Release/net8.0/$(PROJECT)
 DLL_FILE    = $(BUILD_DIR)/Release/net8.0/$(PROJECT).dll
@@ -107,6 +102,8 @@ fclean: clean
 	@echo "$(RED)Cleaned all binaries$(DEF_COLOR)"
 
 re: fclean all
+
+rerun: fclean run
 
 .PHONY: all build run test publish restore clean fclean re force dry-run check-build info help
 

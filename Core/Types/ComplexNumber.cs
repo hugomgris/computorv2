@@ -3,31 +3,10 @@ using ComputorV2.Core.Math;
 
 namespace ComputorV2.Core.Types
 {
-	public class ComplexNumber: MathValue, IComplexNumber, IEquatable<ComplexNumber>
+	public class ComplexNumber : MathValue, IEquatable<ComplexNumber>
 	{
-		private readonly RationalNumber _real;
-		private readonly RationalNumber _imaginary;
-
-		#region Properties
-
-        public RationalNumber Real => _real;
-        public RationalNumber Imaginary => _imaginary;
-        
-        public override bool IsReal => _imaginary == RationalNumber.Zero;
-        public override bool IsZero => _real == RationalNumber.Zero && _imaginary == RationalNumber.Zero;
-        public bool IsImaginary => _real == RationalNumber.Zero;
-
-		public double Magnitude
-		{
-			get
-			{
-				double realValue = (double)_real.ToDecimal();
-				double imaginaryValue = (double)_imaginary.ToDecimal();
-				return CustomMath.Sqrt(realValue * realValue + imaginaryValue * imaginaryValue);
-			}
-		}
-
-   		#endregion
+		private readonly RationalNumber	_real;
+		private readonly RationalNumber	_imaginary;
 
 		#region Constructors
 
@@ -37,12 +16,20 @@ namespace ComputorV2.Core.Types
 			_imaginary = imaginary;
 		}
 
-		public ComplexNumber(RationalNumber real) : this(real, RationalNumber.Zero) {}
+		public ComplexNumber(RationalNumber real): this(real, RationalNumber.Zero) {}
 
 		public ComplexNumber(string value)
 		{
 			value = value.Trim().Replace(" ", "").ToLower();
-			
+			decimal simpleNegative;
+
+			if (checkIfSimpleNegativeComplexNumber(value, out simpleNegative))
+			{
+				_real = 0;
+				_imaginary = new RationalNumber(simpleNegative);
+				return;
+			}
+
 			if (value == "i")
 			{
 				_real = RationalNumber.Zero;
@@ -59,18 +46,18 @@ namespace ComputorV2.Core.Types
 
 			if (!value.Contains('i'))
 			{
-				_real = RationalNumber.Parse(value);
+				_real = new RationalNumber(value);
 				_imaginary = RationalNumber.Zero;
 				return;
 			}
 
-			if (value.EndsWith('i') && !value.Contains('+') && value.IndexOf('-', 1) == -1)
+			if (value.EndsWith('i') && !value.Contains('+') && value.IndexOf('-') == -1)
 			{
 				string imagPart = value.Substring(0, value.Length - 1);
 				if (string.IsNullOrEmpty(imagPart)) imagPart = "1";
-				
+
 				_real = RationalNumber.Zero;
-				_imaginary = RationalNumber.Parse(imagPart);
+				_imaginary = new RationalNumber(imagPart);
 				return;
 			}
 
@@ -90,31 +77,80 @@ namespace ComputorV2.Core.Types
 			string realPart = value.Substring(0, lastSignIndex);
 			string imaginaryPart = value.Substring(lastSignIndex).Replace("i", "");
 
+			if (realPart.Contains("i"))
+			{
+				string tmp = realPart;
+				realPart = imaginaryPart;
+				imaginaryPart = tmp.Replace("i", "");
+			}
+
 			if (string.IsNullOrEmpty(imaginaryPart) || imaginaryPart == "+")
 				imaginaryPart = "1";
 			if (imaginaryPart == "-")
 				imaginaryPart = "-1";
 
-			_real = RationalNumber.Parse(realPart);
-			_imaginary = RationalNumber.Parse(imaginaryPart);
+			_real = new RationalNumber(realPart);
+			_imaginary = new RationalNumber(imaginaryPart);
 		}
 
 		#endregion
 
-		#region Static Factory Methods	
+		#region Properties
 
-		public static ComplexNumber Parse(string input)
+		public RationalNumber Real => _real;
+		public RationalNumber Imaginary => _imaginary;
+
+		public override bool IsReal => _imaginary == RationalNumber.Zero;
+		public override bool IsZero => _real == RationalNumber.Zero && _imaginary == RationalNumber.Zero;
+		public bool IsImaginary => _real == RationalNumber.Zero;
+		
+		public double Magnitude
 		{
-			return new ComplexNumber(input);
+			get
+			{
+				double realValue = (double)_real.ToDecimal();
+				double imaginaryValue = (double)_imaginary.ToDecimal();
+				return CustomMath.Sqrt(realValue * realValue + imaginaryValue * imaginaryValue);
+			}
 		}
 
 		#endregion
 
 		#region Static Factory Methods
 
+		public static ComplexNumber Parse(string input)
+		{
+			return new ComplexNumber(input);
+		}
+
+		public static bool TryParse(string value, out ComplexNumber? result)
+		{
+			try
+			{
+				value = value.Trim().Replace(" ", "").ToLower();
+				if (!value.Contains('i'))
+				{
+					result = null;
+					return false;
+				}
+				
+				result = new ComplexNumber(value);
+				return true;
+			}
+			catch
+			{
+				result = null;
+				return false;
+			}
+		}
+
+		public static ComplexNumber Zero => new ComplexNumber(0, 0);
+
+		public static ComplexNumber One => new ComplexNumber(1, 0);
+
 		public static ComplexNumber I => new ComplexNumber(RationalNumber.Zero, RationalNumber.One);
 
-		#endregion;
+		#endregion
 
 		#region Comparison Operations
 
@@ -217,9 +253,9 @@ namespace ComputorV2.Core.Types
 
 		#endregion
 
-		#region Interface Implementation
+		#region IEquatable interface implementations
 
-		public int CompareTo(IComplexNumber? other)
+		public int CompareTo(ComplexNumber? other)
 		{
 			if (other is null) return 1;
 			if (other is not ComplexNumber otherComplex)
@@ -230,16 +266,10 @@ namespace ComputorV2.Core.Types
 			return 0;
 		}
 
-		public bool Equals(IComplexNumber? other)
+		public bool Equals(ComplexNumber? other)
 		{
 			if (other is not ComplexNumber otherComplex) return false;
 			return this == otherComplex;
-		}
-
-		public bool Equals(ComplexNumber? other)
-		{
-			if (other is null) return false;
-			return this == other;
 		}
 
 		public override bool Equals(object? obj)
@@ -264,19 +294,19 @@ namespace ComputorV2.Core.Types
 			
 			string imaginaryPart;
 			if (_imaginary == RationalNumber.One)
-				imaginaryPart = " + i";
+				imaginaryPart = "+i";
 			else if (_imaginary == -RationalNumber.One)
-				imaginaryPart = " - i";
+				imaginaryPart = "-i";
 			else
 				imaginaryPart = _imaginary >= RationalNumber.Zero ? 
-					$" + {_imaginary}i" : $" - {(-_imaginary)}i";
+					$"+{_imaginary}i" : $"-{(-_imaginary)}i";
 			
 			return $"{_real}{imaginaryPart}";
 		}
 
 		#endregion
 
-		#region Type Convervions
+		#region Type Conversions
 		
 		public static implicit operator ComplexNumber(RationalNumber real) 
 			=> new ComplexNumber(real);
@@ -285,7 +315,7 @@ namespace ComputorV2.Core.Types
 		
 		#endregion
 
-		#region MathValue Implementation
+		#region Math Operations
 
 		public override MathValue Add(MathValue other)
 		{
@@ -327,34 +357,45 @@ namespace ComputorV2.Core.Types
 			};
 		}
 
+		public override MathValue Modulo(MathValue other)
+		{
+			throw new ArgumentException("Modulo operation is not supported for complex numbers");
+		}
+
 		public override MathValue Power(int exponent) => PowerComplex(exponent);
 		public override MathValue Negate() => -this;
 
 		public override RationalNumber? AsRational() => IsReal ? _real : null;
-		public override ComplexNumber AsComplex() => this;
+		public ComplexNumber AsComplex() => this;
 
-		public override bool Equals(MathValue? other) => other is ComplexNumber c && this.Equals(c);
+		#endregion
 
-		public static bool TryParse(string value, out ComplexNumber? result)
+		#region Helpers
+
+		public bool checkIfSimpleNegativeComplexNumber(string value, out decimal parsedNegative)
 		{
-			try
+			int		numbers = 0;
+
+			foreach (char c in value)
 			{
-				// Only parse as complex if it contains 'i' or is complex notation
-				value = value.Trim().Replace(" ", "").ToLower();
-				if (!value.Contains('i'))
+				if ("+*/^%".Contains(c))
 				{
-					result = null;
+					parsedNegative = 0;
 					return false;
 				}
-				
-				result = new ComplexNumber(value);
-				return true;
+				else if (Char.IsNumber(c)) numbers++;
 			}
-			catch
+
+			if (value.Count(x => x == '-') != 1 ||
+				value.Count(x => x == 'i') != 1 ||
+				numbers == 0)
 			{
-				result = null;
+				parsedNegative = 0;
 				return false;
 			}
+
+			parsedNegative = decimal.Parse(value.Replace("i", ""));
+			return true;
 		}
 
 		#endregion

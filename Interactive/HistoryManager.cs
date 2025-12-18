@@ -1,30 +1,38 @@
 using System.IO;
+using ComputorV2.IO;
 
 namespace ComputorV2.Interactive
 {
 	public class HistoryManager
 	{
+		private DisplayManager? _displayManager = null;
 		private List<string>	_history;
 		private int				_maxCapacity;
 		private int				_currentIndex = -1;
 
 		public int Count => _history.Count;
 
+
 		public HistoryManager(int maxCapacity = 1000)
 		{
 			if (maxCapacity <= 0)
-				throw new ArgumentException("Capacity must be positive", nameof(maxCapacity));
+				throw new ArgumentException("Capacty must be positive", nameof(maxCapacity));
+
 			_maxCapacity = maxCapacity;
 			_history = new List<string>();
 			_history.Capacity = _maxCapacity;
 		}
 
-	public void AddCommand(string? command)
-	{
-		command = command?.Trim();
-		if (string.IsNullOrEmpty(command)) return;
-		
-		if (_history.Count > 0 &&
+		public void AddCommand(string? command)
+		{
+			command = command?.Trim();
+
+			if (string.IsNullOrEmpty(command)) return;
+
+			if (CheckIfCommandExists(command))
+				return;
+
+			if (_history.Count > 0 &&
 				string.Equals(command, _history[_history.Count - 1], StringComparison.OrdinalIgnoreCase))
 				return;
 
@@ -33,7 +41,7 @@ namespace ComputorV2.Interactive
 				_history.RemoveAt(0);
 			}
 
-			_history.Add(command);
+			_history.Add(command.Replace(" ", ""));
 			ResetNavigation();
 		}
 
@@ -46,6 +54,7 @@ namespace ComputorV2.Interactive
 
 		public void ClearHistory()
 		{
+			_displayManager!.DisplayInColor($"History cleared (contained {_history.Count} entries)", ConsoleColor.DarkMagenta);
 			_history.Clear();
 		}
 
@@ -64,7 +73,7 @@ namespace ComputorV2.Interactive
 
 		public void MoveToNext()
 		{
-			if (_currentIndex == -1 || _currentIndex == _history.Count - 1) 
+			if (_currentIndex == -1 || _currentIndex == _history.Count - 1)
 			{
 				_currentIndex = -1;
 				return;
@@ -76,6 +85,7 @@ namespace ComputorV2.Interactive
 		public string? GetCurrentCommand()
 		{
 			if (_currentIndex == -1 || _currentIndex >= _history.Count) return null;
+
 			return _history[_currentIndex];
 		}
 
@@ -114,6 +124,7 @@ namespace ComputorV2.Interactive
 		{
 			try
 			{
+				// Create history file if it doesn't exist
 				if (!File.Exists(filePath))
 				{
 					File.WriteAllText(filePath, "");
@@ -136,7 +147,7 @@ namespace ComputorV2.Interactive
 			}
 			catch (DirectoryNotFoundException)
 			{
-				throw new DirectoryNotFoundException($"Invalid directory path: {Path.GetDirectoryName(filePath)}");
+				throw new DirectoryNotFoundException($"Invalid directory path: {filePath}");
 			}
 			catch (UnauthorizedAccessException)
 			{
@@ -152,10 +163,22 @@ namespace ComputorV2.Interactive
 			}
 		}
 
+		private bool CheckIfCommandExists(string command)
+		{
+			foreach(string c in _history)
+			{
+				string trimmed = c.Replace(" ", "");
+				if (command.Replace(" ", "") == trimmed)
+					return true;
+			}
+			
+			return false;
+		}
+
 		private string GetDefaultHistoryFilePath()
 		{
-			var homeDirectory = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-			return Path.Combine(homeDirectory, ".computorv2_history");
+			string currentDirectory = Directory.GetCurrentDirectory();
+			return currentDirectory + "/docs/.computorV2_History";
 		}
 
 		public void SaveToDefaultLocation()
@@ -176,6 +199,11 @@ namespace ComputorV2.Interactive
 				File.Delete(filePath);
 				Console.WriteLine($"History file deleted (path: {filePath})");
 			}
+		}
+
+		public void SetDisplayManagerReference(DisplayManager displayManager)
+		{
+			_displayManager = displayManager;
 		}
 	}
 }

@@ -3,12 +3,18 @@ using ComputorV2.Core.Math;
 
 namespace ComputorV2.Core.Types
 {
-	public class RationalNumber : MathValue, IRationalNumber, IEquatable<RationalNumber>
+	public class RationalNumber : MathValue, IEquatable<RationalNumber>
 	{
-		private readonly long _numerator;
-		private readonly long _denominator;
+		private readonly long	_numerator;
+		private readonly long	_denominator;
 
 		#region Constructors
+
+		public RationalNumber(RationalNumber value)
+		{
+			_numerator = value.Numerator;
+			_denominator = value.Denominator;
+		}
 
 		public RationalNumber(long numerator, long denominator = 1)
 		{
@@ -21,7 +27,7 @@ namespace ComputorV2.Core.Types
 				denominator = -denominator;
 			}
 
-			long gcd = GreatestCommonDivisor(CustomMath.Abs(numerator), denominator);
+			long gcd = CustomMath.GreatestCommonDivisor(CustomMath.Abs(numerator), denominator);
 			_numerator = numerator / gcd;
 			_denominator = denominator / gcd;
 		}
@@ -54,25 +60,36 @@ namespace ComputorV2.Core.Types
 				denominator *= 10;
 			}
 			
-			long numerator = wholePart * denominator + long.Parse(fractionalPart);
-			
-			if (value < 0 && wholePart == 0)
+			long numerator;
+			if (value < 0)
 			{
-				numerator = -numerator;
+				long absWholePart = wholePart < 0 ? -wholePart : wholePart;
+				numerator = -(absWholePart * denominator + long.Parse(fractionalPart));
 			}
-
-			long gcd = GreatestCommonDivisor(CustomMath.Abs(numerator), denominator);
+			else
+			{
+				numerator = wholePart * denominator + long.Parse(fractionalPart);
+			}
+			
+			long gcd = CustomMath.GreatestCommonDivisor(CustomMath.Abs(numerator), denominator);
 			_numerator = numerator / gcd;
 			_denominator = denominator / gcd;
 		}
 
+		public RationalNumber(string value)
+		{
+			RationalNumber parsed = Parse(value);
+			_denominator = parsed.Denominator;
+			_numerator = parsed.Numerator;
+		}
+		
 		#endregion
 
 		#region Properties
 
 		public long Numerator => _numerator;
 		public long Denominator => _denominator;
-		
+
 		public bool IsInteger => _denominator == 1;
 		public override bool IsZero => _numerator == 0;
 
@@ -86,8 +103,8 @@ namespace ComputorV2.Core.Types
 
 		public static RationalNumber Parse(string str)
 		{
-			if (string.IsNullOrWhiteSpace(str))
-				throw new ArgumentException("Input string cannot be null or empty", nameof(str));
+			if (string.IsNullOrEmpty(str))
+				throw new ArgumentException("RationalNumber: Parser: Input string cannot be null or empty", nameof(str));
 
 			str = str.Trim();
 
@@ -95,7 +112,7 @@ namespace ComputorV2.Core.Types
 			{
 				string[] parts = str.Split('/');
 				if (parts.Length != 2)
-					throw new ArgumentException($"Invalid fraction format: {str}", nameof(str));
+					throw new ArgumentException($"RationalNumber: Parser: Invalid fraction format: {str}", nameof(str));
 
 				long numerator = long.Parse(parts[0].Trim());
 
@@ -117,7 +134,6 @@ namespace ComputorV2.Core.Types
 				decimal value = decimal.Parse(str);
 				return new RationalNumber(value);
 			}
-
 			long intValue = long.Parse(str);
 			return new RationalNumber(intValue);
 		}
@@ -138,7 +154,7 @@ namespace ComputorV2.Core.Types
 
 		#endregion
 
-		#region Arithmetic Operations
+		#region arithmetic Operators
 
 		public static RationalNumber operator +(RationalNumber a, RationalNumber b)
 		{
@@ -171,39 +187,25 @@ namespace ComputorV2.Core.Types
 			return new RationalNumber(numerator, denominator);
 		}
 
+		public static RationalNumber operator %(RationalNumber a, RationalNumber b)
+		{
+			if (b.IsZero)
+				throw new DivideByZeroException("Cannot perform modulo by zero");
+
+			decimal aDecimal = (decimal)a;
+			decimal bDecimal = (decimal)b;
+			decimal result = aDecimal % bDecimal;
+			return (RationalNumber)result;
+		}
+
 		public static RationalNumber operator -(RationalNumber a)
 		{
 			return new RationalNumber(-a._numerator, a._denominator);
 		}
 
-		public override MathValue Power(int exponent)
-		{
-			if (exponent == 0)
-				return One;
-			
-			if (exponent < 0)
-			{
-				if (IsZero)
-					throw new DivideByZeroException("Cannot raise zero to negative power");
-				
-				return new RationalNumber(_denominator, _numerator).Power(-exponent);
-			}
-
-			long numerator = 1;
-			long denominator = 1;
-
-			for (int i = 0; i < exponent; i++)
-			{
-				numerator *= _numerator;
-				denominator *= _denominator;
-			}
-
-			return new RationalNumber(numerator, denominator);
-		}
-
 		#endregion
 
-		#region Comparison Operations
+		#region Comparison Operators
 
 		public static bool operator ==(RationalNumber? a, RationalNumber? b)
 		{
@@ -239,24 +241,23 @@ namespace ComputorV2.Core.Types
 
 		#endregion
 
-		#region Interface Implementation
+		#region Type specific implementations
 
 		public decimal ToDecimal()
 		{
 			return (decimal)_numerator / (decimal)_denominator;
 		}
 
-		public IRationalNumber Simplify()
-		{
-			return this;
-		}
-
-		public IRationalNumber Abs()
+		public RationalNumber Abs()
 		{
 			return new RationalNumber(CustomMath.Abs(_numerator), _denominator);
 		}
 
-		public int CompareTo(IRationalNumber? other)
+		#endregion 
+
+		#region IEquatable interface implementations
+
+		public int CompareTo(RationalNumber? other)
 		{
 			if (other is null) return 1;
 			if (other is not RationalNumber otherRational) 
@@ -265,12 +266,6 @@ namespace ComputorV2.Core.Types
 			if (this < otherRational) return -1;
 			if (this > otherRational) return 1;
 			return 0;
-		}
-
-		public bool Equals(IRationalNumber? other)
-		{
-			if (other is not RationalNumber otherRational) return false;
-			return this == otherRational;
 		}
 
 		public bool Equals(RationalNumber? other)
@@ -293,7 +288,7 @@ namespace ComputorV2.Core.Types
 
 		#region String Representation
 
-		public override string ToString()
+			public override string ToString()
 		{
 			if (_denominator == 1)
 				return _numerator.ToString();
@@ -308,22 +303,80 @@ namespace ComputorV2.Core.Types
 
 		#endregion
 
-		#region Helper Methods
+		#region Math Operations
 
-		private static long GreatestCommonDivisor(long a, long b)
+		public override MathValue Add(MathValue other)
 		{
-			while (b != 0)
+			return other switch
 			{
-				long temp = b;
-				b = a % b;
-				a = temp;
-			}
-			return a;
+				RationalNumber r => this + r,
+				//ComplexNumber c => new ComplexNumber(this) + c,
+				_ => throw new ArgumentException($"Cannot add {GetType().Name} and {other.GetType().Name}")
+			};
 		}
 
-		private static long LeastCommonMultiple(long a, long b)
+		public override MathValue Subtract(MathValue other)
 		{
-			return (a * b) / GreatestCommonDivisor(a, b);
+			return other switch
+			{
+				RationalNumber r => this - r,
+				//ComplexNumber c => new ComplexNumber(this) - c,
+				_ => throw new ArgumentException($"Cannot subtract {GetType().Name} and {other.GetType().Name}")
+			};
+		}
+
+		public override MathValue Multiply(MathValue other)
+		{
+			return other switch
+			{
+				RationalNumber r => this * r,
+				//ComplexNumber c => new ComplexNumber(this) * c,
+				_ => throw new ArgumentException($"Cannot multiply {GetType().Name} and {other.GetType().Name}")
+			};
+		}
+
+		public override MathValue Divide(MathValue other)
+		{
+			return other switch
+			{
+				RationalNumber r => this / r,
+				//ComplexNumber c => new ComplexNumber(this) / c,
+				_ => throw new ArgumentException($"Cannot divide {GetType().Name} and {other.GetType().Name}")
+			};
+		}
+
+		public override MathValue Modulo(MathValue other)
+		{
+			return other switch
+			{
+				RationalNumber r => this % r,
+				_ => throw new ArgumentException($"Cannot perform modulo operation between {GetType().Name} and {other.GetType().Name}")
+			};
+		}
+
+		public override MathValue Power(int exponent)
+		{
+			if (exponent == 0)
+				return One;
+
+			if (exponent < 0)
+			{
+				if (IsZero)
+					throw new DivideByZeroException("Cannot raise zero to negative power");
+
+				return new RationalNumber(_denominator, _numerator).Power(-exponent);
+			}
+
+			long numerator = 1;
+			long denominator = 1;
+
+			for (int i = 0; i < exponent; i++)
+			{
+				numerator *= _numerator;
+				denominator *= _denominator;
+			}
+
+			return new RationalNumber(numerator, denominator);
 		}
 
 		#endregion
@@ -352,47 +405,7 @@ namespace ComputorV2.Core.Types
 
 		#endregion
 
-		#region MathValue Implementation
-
-		public override MathValue Add(MathValue other)
-		{
-			return other switch
-			{
-				RationalNumber r => this + r,
-				ComplexNumber c => new ComplexNumber(this) + c,
-				_ => throw new ArgumentException($"Cannot add {GetType().Name} and {other.GetType().Name}")
-			};
-		}
-
-		public override MathValue Subtract(MathValue other)
-		{
-			return other switch
-			{
-				RationalNumber r => this - r,
-				ComplexNumber c => new ComplexNumber(this) - c,
-				_ => throw new ArgumentException($"Cannot subtract {GetType().Name} and {other.GetType().Name}")
-			};
-		}
-
-		public override MathValue Multiply(MathValue other)
-		{
-			return other switch
-			{
-				RationalNumber r => this * r,
-				ComplexNumber c => new ComplexNumber(this) * c,
-				_ => throw new ArgumentException($"Cannot multiply {GetType().Name} and {other.GetType().Name}")
-			};
-		}
-
-		public override MathValue Divide(MathValue other)
-		{
-			return other switch
-			{
-				RationalNumber r => this / r,
-				ComplexNumber c => new ComplexNumber(this) / c,
-				_ => throw new ArgumentException($"Cannot divide {GetType().Name} and {other.GetType().Name}")
-			};
-		}
+		#region Other inheritance implementations
 
 		public override MathValue Negate() => -this;
 
@@ -400,9 +413,9 @@ namespace ComputorV2.Core.Types
 		public override bool IsRational => true;
 
 		public override RationalNumber AsRational() => this;
-		public override ComplexNumber AsComplex() => new ComplexNumber(this);
+		//public override ComplexNumber AsComplex() => new ComplexNumber(this); // TODO
 
-		public override bool Equals(MathValue? other) => other is RationalNumber r && this.Equals(r);
+		///public override bool Equals(MathValue? other) => other is RationalNumber r && this.Equals(r); // TODO: NEEDED?
 
 		#endregion
 	}

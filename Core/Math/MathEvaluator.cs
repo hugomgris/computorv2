@@ -1,630 +1,251 @@
-using ComputorV2.Core.Lexing;
-using ComputorV2.Core.Types;
 using System;
+using System.Text;
 using System.Collections.Generic;
 using System.Linq;
+using ComputorV2.Core.Types;
+using ComputorV2.Core.Lexing;
 
 namespace ComputorV2.Core.Math
 {
-	public record AssignmentInfo(string Variable, MathValue Value);
-
 	public class MathEvaluator
 	{
-		private Dictionary<string, MathValue> _variables = new();
-		private Dictionary<string, Function> _functions = new();
-		private AssignmentInfo? _lastAssignment = null;
+		private readonly Parser							_parser;
+		private readonly Tokenizer						_tokenizer;
+		private Dictionary<string, MathValue>		_variables = new();
+		//private Dictionary<string, Function>	_functions = new();
 
-		public MathValue Evaluate(string expression)
+		public MathEvaluator(Parser parser, Tokenizer tokenizer)
 		{
-			_lastAssignment = null;
-			
-			var trimmed = expression.Trim();
-			if (IsSimpleVariable(trimmed) && _variables.ContainsKey(trimmed))
-			{
-				return _variables[trimmed];
-			}
+			_parser = parser;
+			_tokenizer = tokenizer;
+		}
 
-			if (IsFunctionCall(trimmed))
-			{
-				return HandleFunctionCall(trimmed);
-			}
+		#region Computation pipeline
 
-			if (IsSimpleVariable(trimmed) && _functions.ContainsKey(trimmed))
-			{
-				return _functions[trimmed];
-			}
-			
-			if (IsMatrixLiteral(expression))
-			{
-				return ParseMatrixFromString(expression);
-			}
-			else if (IsAssignment(expression))
-			{
-				return HandleAssignment(expression);
-			}
-			else if (expression.Contains('=') && !expression.Contains("=="))
-			{
-				if (ContainsVariables(expression))
-				{
-					return HandlePolynomialEquation(expression);
-				}
-				throw new ArgumentException($"Invalid assignment: '{expression}'. Variable names must start with a letter.");
-			}
-			else if (IsPolynomialExpression(expression))
-			{
-				return new Polynomial(expression);
-			}
+		public string Compute(string input)
+		{
+			string result;
+
+			if (_parser.DetectInputType(input) == cmd_type.FUNCTION) // TODO: input type detection (currently always returning FUNCTION)
+				result = ComputeFunction(input);
 			else
-			{
-				var tokenizer = new Tokenizer();
-				var tokens = tokenizer.Tokenize(expression);
-				
-				bool hasVariables = tokens.Any(t => IsVariableToken(t) && _variables.ContainsKey(t));
-				bool hasUnknownVariables = tokens.Any(t => IsVariableToken(t) && !_variables.ContainsKey(t));
-				
-				if (hasUnknownVariables)
-				{
-					return new Polynomial(expression);
-				}
-				else if (hasVariables)
-				{
-					var postfix = ConvertToPostfix(tokens);
-					return ProcessPostfix(postfix);
-				}
-				else
-				{
-					var resolvedExpression = ResolveVariables(expression);
+				result = ComputeExpression(input);
 
-					if (ContainsVariables(resolvedExpression))
-					{
-						return new Polynomial(expression);
-					}
-
-					var resolvedTokens = tokenizer.Tokenize(resolvedExpression);
-					var postfix = ConvertToPostfix(resolvedTokens);
-					return ProcessPostfix(postfix);
-				}
-			}
-		}
-
-		private bool IsFunctionCall(string expression)
-		{
-			return System.Text.RegularExpressions.Regex.IsMatch(expression, @"^([a-zA-Z][a-zA-Z0-9_]*)\s*\(.+\)$");
-		}
-
-		private MathValue HandleFunctionCall(string expression)
-		{
-			var match = System.Text.RegularExpressions.Regex.Match(expression, @"^([a-zA-Z][a-zA-Z0-9_]*)\s*\((.+)\)$");
-			if (!match.Success)
-				throw new ArgumentException($"Invalid function call: {expression}");
-
-			string functionName = match.Groups[1].Value;
-			string argumentExpression = match.Groups[2].Value.Trim();
-
-			if (!_functions.ContainsKey(functionName))
-				throw new ArgumentException($"Unknown function: {functionName}");
-
-			var function = _functions[functionName];
-			
-			MathValue argumentValue = Evaluate(argumentExpression);
-			
-			return function.Evaluate(argumentValue);
-		}
-
-		private bool ContainsVariables(string expression)
-		{
-			return System.Text.RegularExpressions.Regex.IsMatch(expression, @"[a-zA-Z]");
-		}
-
-		private bool IsPolynomialExpression(string expression)
-		{
-			return System.Text.RegularExpressions.Regex.IsMatch(expression, 
-				@"[a-zA-Z]\^" +
-				@"|\d+\s*\*\s*[a-zA-Z]" +
-				@"|\d+[a-zA-Z]");
-		}
-		
-
-		private List<string> ConvertToPostfix(List<string> tokens)
-		{
-			var operators = new Stack<string>();
-			var output = new Queue<string>();
-			
-			foreach (var token in tokens)
-			{				
-				if (IsNumber(token) || (IsVariableToken(token) && _variables.ContainsKey(token)))
-				{
-					output.Enqueue(token);
-				}
-				else if ("+-*/^".Contains(token))
-				{
-					while (operators.Count > 0 &&
-						operators.Peek() != "(" &&
-						HasHigherOrEqualPrecedence(operators.Peek(), token))
-					{
-						output.Enqueue(operators.Pop());
-					}
-					operators.Push(token);
-				}
-				else if (token == "(")
-				{
-					operators.Push(token);
-				}
-				else if (token == ")")
-				{
-					while (operators.Count > 0 && operators.Peek() != "(")
-					{
-						output.Enqueue(operators.Pop());
-					}
-					operators.Pop();
-				}
-			}
-
-			while (operators.Count > 0)
-			{
-				output.Enqueue(operators.Pop());
-			}
-
-			return output.ToList();
-		}
-
-		private bool IsNumber(string token)
-		{
-			return RationalNumber.TryParse(token, out _) || 
-				ComplexNumber.TryParse(token, out _) ||
-				IsMatrixToken(token);
-		}
-
-		private bool IsMatrixToken(string token)
-		{
-			return token.Trim().StartsWith("[") && token.Trim().EndsWith("]");
-		}
-
-		private bool HasHigherOrEqualPrecedence(string A, string B)
-		{
-			return GetPrecedence(A) >= GetPrecedence(B);
-		}
-
-		private int GetPrecedence(string op)
-		{
-			return op switch
-			{
-				"+" or "-" => 1,
-				"*" or "/" => 2,
-				"^" => 3,
-				_ => 0
-			};
-		}
-
-		private MathValue ProcessPostfix(List<string> tokens)
-		{
-			var stack = new Stack<MathValue>();
-
-			foreach (var token in tokens)
-			{
-				if (IsNumber(token))
-				{
-					if (RationalNumber.TryParse(token, out RationalNumber? rational))
-					{
-						stack.Push(rational!);
-					}
-					else if (ComplexNumber.TryParse(token, out ComplexNumber? complex))
-					{
-						stack.Push(complex!);
-					}
-					else if (IsMatrixToken(token))
-					{
-						try
-						{
-							var matrix = new Matrix(token);
-							stack.Push(matrix);
-						}
-						catch (Exception ex)
-						{
-							throw new ArgumentException($"Invalid matrix format: {token}", ex);
-						}
-					}
-					else
-					{
-						throw new ArgumentException($"Invalid number format: {token}");
-					}
-				}
-				else if (IsVariableToken(token) && _variables.ContainsKey(token))
-				{
-					stack.Push(_variables[token]);
-				}
-				else if ("+-*/^".Contains(token))
-				{
-					if (stack.Count < 2)
-						throw new InvalidOperationException($"Insufficient operands for operator: {token}");
-					
-					var right = stack.Pop();
-					var left = stack.Pop();
-					var result = ApplyOperation(left, right, token);
-					stack.Push(result);
-				}
-				else
-				{
-					throw new ArgumentException($"Unknown token: {token}");
-				}
-			}
-
-			if (stack.Count != 1)
-				throw new InvalidOperationException("Invalid expression: expected single result");
-
-			return stack.Pop();
-		}
-
-		private MathValue ApplyOperation(MathValue left, MathValue right, string op)
-		{
-			return op switch
-			{
-				"+" => left.Add(right),
-				"-" => left.Subtract(right),
-				"*" => left.Multiply(right),
-				"/" => left.Divide(right),
-				"^" => ApplyPowerOperation(left, right),
-				_ => throw new ArgumentException($"Unknown operator: {op}")
-			};
-		}
-
-		private MathValue ApplyPowerOperation(MathValue baseValue, MathValue exponent)
-		{
-			var rationalExp = exponent.AsRational();
-			if (rationalExp == null || !rationalExp.IsInteger)
-			{
-				throw new ArgumentException("Only integer exponents are currently supported");
-			}
-
-			int exp = (int)rationalExp.Numerator;
-			return baseValue.Power(exp);
-		}
-
-		public bool IsMatrixLiteral(string expression)
-		{
-			var trimmed = expression.Trim();
-			if (!trimmed.StartsWith("[") || !trimmed.EndsWith("]"))
-        		return false;
-			
-			if (HasArithmeticOperators(trimmed))
-				return false;
-			
-			return trimmed.Contains(",") ||
-					trimmed.Contains(";") ||
-					trimmed.StartsWith("[[");
-		}
-		
-		private bool HasArithmeticOperators(string expression)
-		{
-			int bracketDepth = 0;
-			for (int i = 0; i < expression.Length; i++)
-			{
-				char c = expression[i];
-				if (c == '[') bracketDepth++;
-				else if (c == ']') bracketDepth--;
-				else if (bracketDepth == 0 && "+-*/^".Contains(c))
-					return true;
-			}
-			return false;
-		}
-
-		private Matrix ParseMatrixFromString(string expression)
-		{
-			try
-			{
-				return new Matrix(expression.Trim());
-			}
-			catch (Exception ex)
-			{
-				throw new ArgumentException($"Invalid matrix format: ${expression}", ex);
-			}
-		}
-
-		public bool IsAssignment(string expression)
-		{
-			if (!expression.Contains('=') || expression.Contains("=="))
-				return false;
-
-			var parts = expression.Split('=');
-			if (parts.Length != 2)
-				return false;
-
-			var leftSide = parts[0].Trim();
-
-			if (IsFunctionDefinition(leftSide))
-				return true;
-
-			return IsSimpleVariable(leftSide);
-		}
-
-		private bool IsFunctionDefinition(string leftSide)
-		{
-			var match = System.Text.RegularExpressions.Regex.Match(leftSide, @"^([a-zA-Z][a-zA-Z0-9_]*)\s*\(\s*([a-zA-Z][a-zA-Z0-9_]*)\s*\)$");
-			return match.Success;
-		}
-
-		private bool IsSimpleVariable(string token)
-		{
-			return !string.IsNullOrEmpty(token) &&
-				char.IsLetter(token[0]) &&
-				token.All(c => char.IsLetterOrDigit(c)) &&
-				!token.Any(c => "+-*/^()=".Contains(c)) &&
-				token.Length <= 20;
-		}
-		
-		private MathValue HandleAssignment(string expression)
-		{
-			var parts = expression.Split('=');
-			var leftSide = parts[0].Trim();
-			var valueExpression = parts[1].Trim();
-			
-			if (IsFunctionDefinition(leftSide))
-			{
-				return HandleFunctionAssignment(leftSide, valueExpression);
-			}
-			
-			if (leftSide.Contains('(') || leftSide.Contains(')'))
-			{
-				throw new ArgumentException($"Invalid variable name or function definition: {leftSide}");
-			}
-			
-			if (!IsSimpleVariable(leftSide))
-			{
-				throw new ArgumentException($"Invalid variable name: {leftSide}");
-			}
-
-			MathValue value;
-
-			if (IsMatrixLiteral(valueExpression))
-			{
-				value = new Matrix(valueExpression);
-				_variables[leftSide] = value;
-			}
-			else if (RationalNumber.TryParse(valueExpression, out RationalNumber? parsedRational))
-			{
-				value = parsedRational!;
-				_variables[leftSide] = value;
-			}
-			else if (ComplexNumber.TryParse(valueExpression, out ComplexNumber? parsedComplex))
-			{
-				value = parsedComplex!;
-				_variables[leftSide] = value;
-			}
-			else if (IsPolynomialExpression(valueExpression))
-			{
-				value = new Polynomial(valueExpression);
-				_variables[leftSide] = value;
-			}
-			else
-			{
-				var resolvedExpression = ResolveVariables(valueExpression);
-				value = Evaluate(resolvedExpression);
-				_variables[leftSide] = value;
-			}
-
-			_lastAssignment = new AssignmentInfo(leftSide, value);
-			
-			return value;
-		}
-
-		private MathValue HandleFunctionAssignment(string leftSide, string expression)
-		{
-			var match = System.Text.RegularExpressions.Regex.Match(leftSide, @"^([a-zA-Z][a-zA-Z0-9_]*)\s*\(\s*([a-zA-Z][a-zA-Z0-9_]*)\s*\)$");
-			if (!match.Success)
-				throw new ArgumentException($"Invalid function definition: {leftSide}");
-
-			string functionName = match.Groups[1].Value;
-			string variable = match.Groups[2].Value;
-
-			string resolvedExpression = ResolveVariablesExcept(expression, variable);
-
-			var function = new Function(functionName, variable, resolvedExpression);
-			_functions[functionName] = function;
-
-			return function;
-		}
-		
-		public AssignmentInfo? GetLastAssignmentInfo()
-		{
-			return _lastAssignment;
-		}
-
-		private string ResolveVariables(string expression)
-		{
-			var tokenizer = new Tokenizer();
-			var tokens = tokenizer.Tokenize(expression);
-
-			for (int i = 0; i < tokens.Count; i++)
-			{
-				if (IsVariableToken(tokens[i]))
-				{
-					if (tokens[i] == "i")
-					{
-						continue;
-					}
-					
-					if (i + 1 < tokens.Count && tokens[i + 1] == "(")
-					{
-						continue;
-					}
-					
-					if (_functions.ContainsKey(tokens[i]))
-					{
-						continue;
-					}
-					
-					if (_variables.ContainsKey(tokens[i]))
-					{
-						var value = _variables[tokens[i]];
-
-						if (value is Matrix matrix)
-						{
-							tokens[i] = matrix.ToString();
-						}
-						else
-						{
-							tokens[i] = value.ToString();
-						}
-					}
-					else
-					{
-						throw new InvalidOperationException($"Undefined variable: '{tokens[i]}'. Assign a value to the variable first.");
-					}
-				}
-			}
-			
-			var result = string.Join(" ", tokens);
 			return result;
 		}
 
-		private bool IsVariableToken(string token)
+		private string ComputeExpression(string expression)
 		{
-			if (string.IsNullOrEmpty(token))
-				return false;
+			if (HasVariables(expression))
+				expression = SubstituteVariables(expression);
 
-			return char.IsLetter(token[0]) && token.All(c => char.IsLetterOrDigit(c));
+			if (_parser.DetectValueType(expression) == cmd_type.MATRIX)
+				return $"Computing MATRIX variable from {expression} (WIP)";
+			else if (_parser.DetectValueType(expression) == cmd_type.COMPLEX)
+				return ComputeComplex(expression);
+			else if (_parser.DetectValueType(expression) == cmd_type.RATIONAL)
+				return ComputeRational(expression);
+			else
+				return "";
 		}
 
-		public Dictionary<string, MathValue> GetVariables()
+		private string ComputeRational(string expression)
 		{
-			return new Dictionary<string, MathValue>(_variables);
+			Postfix postfix = new Postfix(expression.Replace("?", ""));
+
+			RationalNumber value = new RationalNumber(postfix.Calculate());
+
+			return value.ToString();
 		}
 
-		public void ClearVariables()
+		private string ComputeComplex(string expression)
 		{
-			_variables.Clear();
+			expression = expression.Replace("?", "");
+			expression = expression.Replace("=", "");
+			Console.WriteLine(expression);
+			if (!ComplexNumber.TryParse(expression, out _) || expression.Count(x => x == 'i') > 1)
+				expression = _parser.SimplifyComplexExpression(expression);
+		
+			ComplexNumber value = new ComplexNumber(expression);
+
+			return value.ToString();
 		}
 
-		public void ClearFunctions()
+		private string ComputeFunction(string input)
 		{
-			_functions.Clear();
-		}
-
-		public void ClearAll()
-		{
-			_variables.Clear();
-			_functions.Clear();
-		}
-
-		public MathValue? GetVariable(string name)
-		{
-			return _variables.TryGetValue(name, out MathValue? value) ? value : null;
-		}
-
-		public void SetVariable(string name, MathValue value)
-		{
-			_variables[name] = value;
-		}
-
-		private MathValue HandlePolynomialEquation(string expression)
-		{
-			var parts = expression.Split('=');
-			if (parts.Length != 2)
-			{
-				throw new ArgumentException("Invalid equation format");
-			}
-
-			var leftSide = parts[0].Trim();
-			var rightSide = parts[1].Trim();
-
-			var leftPoly = new Polynomial(leftSide);
-			var rightPoly = new Polynomial(rightSide);
-
-			var equation = leftPoly.Subtract(rightPoly);
-
-			if (equation is Polynomial poly)
-			{
-				var solutions = poly.Solve();
-				
-				if (solutions.Count == 0)
-				{
-					throw new InvalidOperationException("No solution exists for this equation");
-				}
-				else if (solutions.Count == 1)
-				{
-					return solutions[0];
-				}
-				else
-				{
-					var solutionStrings = solutions.Select(s => s.ToString());
-					Console.WriteLine($"Info: Multiple solutions: {string.Join(", ", solutionStrings)}");
-					return solutions[0];
-				}
-			}
-
-			throw new InvalidOperationException("Unable to solve equation");
-		}
-
-		#region Function management
-
-		public Function? GetFunction(string name)
-		{
-			return _functions.TryGetValue(name, out Function? value) ? value : null;
-		}
-
-		public void SetFunction(string name, Function function)
-		{
-			_functions[name] = function;
-		}
-
-		public Dictionary<string, Function> GetFunctions()
-		{
-			return new Dictionary<string, Function>(_functions);
+			return $"Computing function (WIP)";
 		}
 
 		#endregion
 
-		private string ResolveVariablesExcept(string expression, string excludeVariable)
+		#region Assignation pipeline
+
+		public string Assign(string input)
 		{
-			var tokenizer = new Tokenizer();
-			var tokens = tokenizer.Tokenize(expression);
+			string result;
 
-			for (int i = 0; i < tokens.Count; i++)
+			if (_parser.DetectInputType(input) == cmd_type.FUNCTION) // TODO: input type detection (currently always returning FUNCTION)
+				result = StoreFunction(input);
+			else
+				result = StoreVariable(input);
+
+			return result;
+		}
+
+		private string StoreVariable(string input)
+		{
+			string[] parts = input.Split('=');
+			if (parts.Length != 2)
+				throw new ArgumentException($"RationalNumber: Parser: expression can only contain one '=': {input}", nameof(input));
+
+			if (_parser.ValidateVariableName(parts[0]) == var_error.INVALIDCHAR)
+				throw new ArgumentException($"Assignation: variable name can only contain alphanumeric characters: {input}", nameof(input));
+			else if (_parser.ValidateVariableName(parts[0]) == var_error.HASICHAR)
+				throw new ArgumentException($"Assignation: variable name can not contain 'i' character: {input}", nameof(input));
+			else if (_parser.ValidateVariableName(parts[0]) == var_error.NOALPHA)
+				throw new ArgumentException($"Assignation: variable name must contain at least one alphabetical character: {input}", nameof(input));
+			
+			if (HasVariables(parts[1]))
+				parts[1] = SubstituteVariables(parts[1]);
+
+			if (_parser.DetectValueType(parts[1]) == cmd_type.MATRIX)
+				return $"Storing MATRIX variable from {input}";
+			else if (_parser.DetectValueType(parts[1]) == cmd_type.COMPLEX)
+				return StoreComplex(parts);
+			else if (_parser.DetectValueType(parts[1]) == cmd_type.RATIONAL)
+				return StoreRational(parts);
+			else
+				return "";
+		}
+
+		private string StoreRational(string[] parts)
+		{			
+			string name = parts[0];
+
+			Postfix postfix = new Postfix(parts[1]);
+
+			RationalNumber value = new RationalNumber(postfix.Calculate());
+
+			_variables[name] = value;
+
+			return value.ToString();
+		}
+
+		private string StoreComplex(string[] parts)
+		{
+			string name = parts[0];
+			
+			if (!ComplexNumber.TryParse(parts[1], out _) || parts[1].Count(x => x == 'i') > 1)
+				parts[1] = _parser.SimplifyComplexExpression(parts[1]);
+		
+			ComplexNumber value = new ComplexNumber(parts[1]);
+
+			// Not sure if this is correct, but if a complex number has no imaginary part, I store it as a Rational
+			if (value.IsReal)
 			{
-				if (IsVariableToken(tokens[i]))
+				RationalNumber valueRational = new RationalNumber(value.Real);
+				_variables[name] = valueRational;
+			}
+			else
+				_variables[name] = value;
+
+			return value.ToString();
+		}
+
+		private string StoreFunction(string input)
+		{
+			return $"Storing function from {input}";
+		}
+
+		#endregion
+
+		#region Variable substitution
+
+		private bool HasVariables(string expression)
+		{
+			foreach (char c in expression)
+			{
+				if (Char.IsLetter(c) && c != 'i')
+					return true;
+			}
+
+			return false;
+		}
+
+		private string SubstituteVariables(string expression)
+		{
+			StringBuilder sb = new StringBuilder();
+
+			foreach (char c in expression)
+			{
+				if (Char.IsLetter(c) && c != 'i')
 				{
-					if (tokens[i] == excludeVariable)
+					if (_variables.ContainsKey(c.ToString()))
 					{
-						continue;
-					}
-					
-					if (tokens[i] == "i")
-					{
-						continue;
-					}
-					
-					if (i + 1 < tokens.Count && tokens[i + 1] == "(")
-					{
-						continue;
-					}
-
-					if (_functions.ContainsKey(tokens[i]))
-					{
-						continue;
-					}
-					
-					if (_variables.ContainsKey(tokens[i]))
-					{
-						var value = _variables[tokens[i]];
-
-						if (value is Matrix matrix)
-						{
-							tokens[i] = matrix.ToString();
-						}
-						else
-						{
-							tokens[i] = value.ToString();
-						}
+						sb.Append(_variables[c.ToString()]);
 					}
 					else
 					{
-						throw new InvalidOperationException($"Undefined variable: '{tokens[i]}'. Assign a value to the variable first.");
+						throw new ArgumentException($"Variable Substitution: expression contains undefined variables: {expression}", nameof(expression));
 					}
 				}
+				else
+				{
+					sb.Append(c);
+				}
 			}
-			
-			var result = string.Join(" ", tokens);
-			return result;
+
+			return sb.ToString();
 		}
+
+		#endregion
+
+		#region Stored data printing
+
+		public void PrintVariableList()
+		{
+			if (_variables.Count == 0)
+			{
+				Console.WriteLine("No variables defined!");
+				return;
+			}
+
+			Console.WriteLine("Declared variables:");
+			foreach (var item in _variables)
+			{
+				Console.WriteLine("{0} = {1}", item.Key, item.Value);
+			}
+		}
+
+		public void PrintFunctionList()
+		{
+			Console.WriteLine("Function list printing is WIP!");
+			// TODO: pending function implementation
+			/* if (_functions.Count == 0)
+			{
+				Console.WriteLine("No functions defined!");
+				return;
+			}
+
+			Console.WriteLine("Defined functions:");
+			foreach (var item in _functions)
+			{
+				Console.WriteLine("{0} = {1}", item.Key, item.Value);
+			} */
+		}
+
+		public void PrintAllLists()
+		{
+			PrintVariableList();
+			PrintFunctionList();
+		}
+
+		#endregion
+
+		#region Testing stuff
+
+		public Dictionary<string, MathValue> Variables => _variables;
+
+		#endregion
 	}
 }

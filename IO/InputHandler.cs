@@ -32,7 +32,7 @@ namespace ComputorV2.IO
 			while (true)
 			{
 				ConsoleKeyInfo keyInfo = Console.ReadKey(true);
-
+				
 				switch (keyInfo.Key)
 				{
 					case ConsoleKey.Enter:
@@ -46,7 +46,7 @@ namespace ComputorV2.IO
 					case ConsoleKey.Delete:
 						HandleDelete();
 						break;
-
+					
 					case ConsoleKey.LeftArrow:
 						HandleLeftArrow();
 						break;
@@ -73,9 +73,7 @@ namespace ComputorV2.IO
 
 					default:
 						if (char.IsControl(keyInfo.KeyChar))
-						{
 							continue;
-						}
 
 						HandleCharacterInput(keyInfo.KeyChar);
 						break;
@@ -102,6 +100,7 @@ namespace ComputorV2.IO
 				_inputBuffer.Insert(_cursorPosition, character);
 			}
 			_cursorPosition++;
+
 		}
 
 		private void HandleBackspace()
@@ -124,23 +123,19 @@ namespace ComputorV2.IO
 		private void HandleLeftArrow()
 		{
 			if (_cursorPosition > 0)
-			{
 				_cursorPosition--;
-			}
 		}
 
 		private void HandleRightArrow()
 		{
 			if (_cursorPosition < _inputBuffer.Length)
-			{
 				_cursorPosition++;
-			}
 		}
 
 		private void HandleUpArrow()
 		{
 			if (_historyManager.Count == 0) return;
-			
+
 			_historyManager.MoveToPrevious();
 			string? command = _historyManager.GetCurrentCommand();
 			if (command != null)
@@ -152,13 +147,14 @@ namespace ComputorV2.IO
 		private void HandleDownArrow()
 		{
 			if (_historyManager.Count == 0) return;
-			
+
 			_historyManager.MoveToNext();
 			string? command = _historyManager.GetCurrentCommand();
 			if (command != null)
 			{
 				SetHistoryContent(command);
-			} else
+			}
+			else
 			{
 				ClearBuffer();
 			}
