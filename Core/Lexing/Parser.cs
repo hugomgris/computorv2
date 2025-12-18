@@ -94,11 +94,12 @@ namespace ComputorV2.Core.Lexing
 				{
 					for (int j = i - 1; j >= 0 && expression[j] != 'i'; j--)
 					{
+						Console.WriteLine($"j={expression[j]}-i={i}");
 						if ("+-".Contains(expression[j]))
 						{
 							if (anchor == 0 && j != 0)
 								realPart += expression[0].ToString();
-							imaginaryPart += expression.Substring(j, i - j + 1).Replace("*", "");
+							imaginaryPart += expression.Substring(j, i - j + 1);
 							realPart += expression.Substring(anchor + 1, j - anchor);
 							if (realPart.EndsWith("+") || realPart.EndsWith("-"))
 								realPart = realPart.Substring(0, realPart.Length - 1);
@@ -110,9 +111,17 @@ namespace ComputorV2.Core.Lexing
 							imaginaryPart += expression.Substring(0, i + 1);
 							anchor = i;
 						}
+						else if (expression[j - 1] == 'i')
+						{
+							imaginaryPart += expression.Substring(j, i - j);
+							anchor = i;
+						}
 					}
 				}
 			}
+
+			Console.WriteLine($"realPart:{realPart}");
+			Console.WriteLine($"imaginaryPart:{imaginaryPart}");
 
 			if (anchor < expression.Length - 1)
 				realPart += expression.Substring(anchor + 1, expression.Length - anchor - 1);
