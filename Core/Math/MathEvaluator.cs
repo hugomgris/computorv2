@@ -165,13 +165,27 @@ namespace ComputorV2.Core.Math
 		{
 			StringBuilder sb = new StringBuilder();
 
-			foreach (char c in expression)
+			for (int i = 0; i < expression.Length; i++)
 			{
-				if (Char.IsLetter(c) && c != 'i')
+				if (Char.IsLetter(expression[i]) && expression[i] != 'i')
 				{
-					if (_variables.ContainsKey(c.ToString()))
+					string var = expression[i].ToString();
+					if (i < expression.Length)
 					{
-						sb.Append(_variables[c.ToString()]);
+						for (int j = i + 1; j < expression.Length; j++)
+						{
+							if (Char.IsLetterOrDigit(expression[j]) && expression[j] != 'i')
+								var += expression[j].ToString();
+							else
+								break;							
+						}
+					}
+
+					i += var.Length - 1;
+					
+					if (_variables.ContainsKey(var))
+					{
+						sb.Append(_variables[var]);
 					}
 					else
 					{
@@ -180,7 +194,7 @@ namespace ComputorV2.Core.Math
 				}
 				else
 				{
-					sb.Append(c);
+					sb.Append(expression[i]);
 				}
 			}
 
@@ -238,3 +252,48 @@ namespace ComputorV2.Core.Math
 		#endregion
 	}
 }
+
+/*
+private string SubstituteVariables(string expression)
+		{
+			Console.WriteLine($"expression->{expression}");
+			StringBuilder sb = new StringBuilder();
+
+			for (int i = 0; i < expression.Length; i++)
+			{
+				Console.WriteLine($"char->{expression[i]}");
+				if (Char.IsLetter(expression[i]) && expression[i] != 'i')
+				{
+					string var = expression[i].ToString();
+					if (i < expression.Length - 1)
+					{
+						for (int j = i + 1; j < expression.Length; j++)
+						{
+							Console.WriteLine($"charJ->{expression[j]}");
+							if (Char.IsLetterOrDigit(expression[j]) && expression[j] != 'i')
+								var += expression[j].ToString();
+							else
+								break;
+						}
+					}
+
+					Console.WriteLine($"var->{var}");
+					
+					if (_variables.ContainsKey(var))
+					{
+						sb.Append(var);
+					}
+					else
+					{
+						throw new ArgumentException($"Variable Substitution: expression contains undefined variables: {expression}", nameof(expression));
+					}
+				}
+				else
+				{
+					sb.Append(expression[i]);
+				}
+			}
+
+			return sb.ToString();
+		}
+*/
