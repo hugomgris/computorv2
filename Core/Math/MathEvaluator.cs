@@ -40,7 +40,7 @@ namespace ComputorV2.Core.Math
 				expression = SubstituteVariables(expression);
 
 			if (_parser.DetectValueType(expression) == cmd_type.MATRIX)
-				return $"Computing MATRIX variable from {expression} (WIP)";
+				return ComputeMatrix(expression);
 			else if (_parser.DetectValueType(expression) == cmd_type.COMPLEX)
 				return ComputeComplex(expression);
 			else if (_parser.DetectValueType(expression) == cmd_type.RATIONAL)
@@ -65,6 +65,15 @@ namespace ComputorV2.Core.Math
 			Postfix postfix = new Postfix(tokens);
 
 			var result = (ComplexNumber)postfix.Calculate();
+			return result.ToString();
+		}
+
+		private string ComputeMatrix(string expression)
+		{
+			List<string> tokens = _tokenizer.Tokenize(expression.Replace("?","").Replace("=",""));
+			Postfix postfix = new Postfix(tokens);
+
+			var result = (Matrix)postfix.Calculate();
 			return result.ToString();
 		}
 
@@ -106,7 +115,7 @@ namespace ComputorV2.Core.Math
 				parts[1] = SubstituteVariables(parts[1]);
 
 			if (_parser.DetectValueType(parts[1]) == cmd_type.MATRIX)
-				return $"Storing MATRIX variable from {input}";
+				return StoreMatrix(parts);
 			else if (_parser.DetectValueType(parts[1]) == cmd_type.COMPLEX)
 				return StoreComplex(parts);
 			else if (_parser.DetectValueType(parts[1]) == cmd_type.RATIONAL)
@@ -136,6 +145,19 @@ namespace ComputorV2.Core.Math
 			Postfix postfix = new Postfix(tokens);
 			var result = (ComplexNumber)postfix.Calculate();
 
+			_variables[name] = result;
+
+			return result.ToString();
+		}
+
+		private string StoreMatrix(string[] parts)
+		{
+			string name = parts[0];
+
+			List<string> tokens = _tokenizer.Tokenize(parts[1].Replace("?", "").Replace("=", ""));
+			Postfix postfix = new Postfix(tokens);
+			var result = (Matrix)postfix.Calculate();
+			
 			_variables[name] = result;
 
 			return result.ToString();
@@ -252,48 +274,3 @@ namespace ComputorV2.Core.Math
 		#endregion
 	}
 }
-
-/*
-private string SubstituteVariables(string expression)
-		{
-			Console.WriteLine($"expression->{expression}");
-			StringBuilder sb = new StringBuilder();
-
-			for (int i = 0; i < expression.Length; i++)
-			{
-				Console.WriteLine($"char->{expression[i]}");
-				if (Char.IsLetter(expression[i]) && expression[i] != 'i')
-				{
-					string var = expression[i].ToString();
-					if (i < expression.Length - 1)
-					{
-						for (int j = i + 1; j < expression.Length; j++)
-						{
-							Console.WriteLine($"charJ->{expression[j]}");
-							if (Char.IsLetterOrDigit(expression[j]) && expression[j] != 'i')
-								var += expression[j].ToString();
-							else
-								break;
-						}
-					}
-
-					Console.WriteLine($"var->{var}");
-					
-					if (_variables.ContainsKey(var))
-					{
-						sb.Append(var);
-					}
-					else
-					{
-						throw new ArgumentException($"Variable Substitution: expression contains undefined variables: {expression}", nameof(expression));
-					}
-				}
-				else
-				{
-					sb.Append(expression[i]);
-				}
-			}
-
-			return sb.ToString();
-		}
-*/

@@ -413,7 +413,7 @@ namespace ComputorV2.Core.Types
 		public override bool IsRational => true;
 
 		public override RationalNumber AsRational() => this;
-		//public override ComplexNumber AsComplex() => new ComplexNumber(this); // TODO
+		public override ComplexNumber AsComplex() => new ComplexNumber(this); // TODO
 
 		///public override bool Equals(MathValue? other) => other is RationalNumber r && this.Equals(r); // TODO: NEEDED?
 

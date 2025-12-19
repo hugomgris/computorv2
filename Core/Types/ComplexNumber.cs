@@ -25,6 +25,7 @@ namespace ComputorV2.Core.Types
 
 			if (checkIfSimpleNegativeComplexNumber(value, out simpleNegative))
 			{
+				Console.WriteLine("HERE");
 				_real = 0;
 				_imaginary = new RationalNumber(simpleNegative);
 				return;
@@ -366,7 +367,7 @@ namespace ComputorV2.Core.Types
 		public override MathValue Negate() => -this;
 
 		public override RationalNumber? AsRational() => IsReal ? _real : null;
-		public ComplexNumber AsComplex() => this;
+		public override ComplexNumber AsComplex() => this;
 
 		#endregion
 
@@ -374,8 +375,6 @@ namespace ComputorV2.Core.Types
 
 		public bool checkIfSimpleNegativeComplexNumber(string value, out decimal parsedNegative)
 		{
-			int		numbers = 0;
-
 			foreach (char c in value)
 			{
 				if ("+*/^%".Contains(c))
@@ -383,19 +382,30 @@ namespace ComputorV2.Core.Types
 					parsedNegative = 0;
 					return false;
 				}
-				else if (Char.IsNumber(c)) numbers++;
 			}
 
-			if (value.Count(x => x == '-') != 1 ||
-				value.Count(x => x == 'i') != 1 ||
-				numbers == 0)
+			if (value.Contains('i') && value.Contains('-'))
 			{
-				parsedNegative = 0;
-				return false;
-			}
+				string[] split = value.Split('-');
+				
+				if (split.Length > 1 && !string.IsNullOrEmpty(split[0]))
+				{
+					parsedNegative = 0;
+					return false;
+				}
+				else
+				{
+					if (split[1].Length == 1 && split[1][0] == 'i')
+						parsedNegative = -1;
+					else
+						parsedNegative = -decimal.Parse(split[1].Replace("i", ""));
 
-			parsedNegative = decimal.Parse(value.Replace("i", ""));
-			return true;
+					
+					return true;
+				}
+			}
+			parsedNegative = 0;
+			return false;
 		}
 
 		#endregion

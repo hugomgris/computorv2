@@ -52,6 +52,27 @@ namespace ComputorV2.Tests
 		}
 
 		[Fact]
+		public void SubjectTests_Assignation_Matrix()
+		{
+			_evaluator.Assign("varA=[[3,4]]");
+			_evaluator.Assign("varB=[[2,3];[4,3]]");
+			_evaluator.Assign("varC=[[1,2];[3,2];[3,4]]");
+
+			Dictionary<string, MathValue> vars = _evaluator.Variables;
+			Assert.True(vars.ContainsKey("varA"));
+			Assert.True(vars.ContainsKey("varB"));
+			Assert.True(vars. ContainsKey("varC"));
+
+			RationalNumber[,] rn1 = {{new RationalNumber(3), new RationalNumber(4)}};
+			RationalNumber[,] rn2 = {{new RationalNumber(2), new RationalNumber(3)}, {new RationalNumber(4), new RationalNumber(3)}};
+			RationalNumber[,] rn3 = {{new RationalNumber(1), new RationalNumber(2)}, {new RationalNumber(3), new RationalNumber(2)}, {new RationalNumber(3), new RationalNumber(4)}};
+			
+			Assert.Equal(new Matrix(rn1), vars["varA"]);
+			Assert.Equal(new Matrix(rn2), vars["varB"]);
+			Assert.Equal(new Matrix(rn3), vars["varC"]);
+		}
+
+		[Fact]
 		public void SubjectTests_Reassignation()
 		{
 			_evaluator.Assign("x=2");

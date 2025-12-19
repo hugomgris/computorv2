@@ -34,7 +34,7 @@ namespace ComputorV2.Core.Math
 				string currentToken = InfixStack.Pop();
 
 				// DEBUG
-				//Console.WriteLine($"Managing token:{currentToken}");
+				Console.WriteLine($"Managing token:{currentToken}");
 
 				if (IsOperator(currentToken))
 				{
@@ -85,6 +85,9 @@ namespace ComputorV2.Core.Math
 				output.Push(operators.Pop());
 			}
 
+			// DEBUG
+			//foreach(string tok in output) Console.WriteLine($"outputtok->{tok}");
+
 			Stack<string> reversedStack = new Stack<string>();
 			while (output.Count > 0) reversedStack.Push(output.Pop());
 
@@ -121,6 +124,11 @@ namespace ComputorV2.Core.Math
 					{
 						RationalNumber rn = new RationalNumber(currentToken);
 						EvaluationStack.Push(rn);
+					}
+					else if (Matrix.TryParse(currentToken, out _))
+					{
+						Matrix m = new Matrix(currentToken);
+						EvaluationStack.Push(m);
 					}
 					else
 						throw new ArgumentException("Postfix Calculation: error while managing number token");
@@ -182,6 +190,7 @@ namespace ComputorV2.Core.Math
 		{
 			Rational,
 			Complex,
+			Matrix,
 			NoNumber
 		}
 
@@ -197,6 +206,8 @@ namespace ComputorV2.Core.Math
 				return NumberType.Complex;
 			else if (RationalNumber.TryParse(token, out _))
 				return NumberType.Rational;
+			else if (Matrix.TryParse(token, out _))
+				return NumberType.Matrix;
 			return NumberType.NoNumber;
 		}
 
