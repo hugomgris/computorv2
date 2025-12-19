@@ -29,14 +29,13 @@ namespace ComputorV2.Core.Lexing
 
 	public class Parser
 	{
-		/*
-		fun(x) = 2x + 3
-		a = (2 + 3) * 5
-
-		*/
 		public cmd_type DetectInputType(string input)
 		{
-			if (input.Contains(")="))
+			var parts = input.Split('=');
+			string leftSide = parts[0].Trim();
+
+			var match = System.Text.RegularExpressions.Regex.Match(leftSide, @"^([a-zA-Z][a-zA-Z0-9_]*)\s*\(\s*([a-zA-Z][a-zA-Z0-9_]*)\s*\)$");
+			if (match.Success)
 				return cmd_type.FUNCTION;
 			else
 				return cmd_type.ASSIGNMENT;

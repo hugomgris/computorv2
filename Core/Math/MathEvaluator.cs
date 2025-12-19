@@ -9,10 +9,10 @@ namespace ComputorV2.Core.Math
 {
 	public class MathEvaluator
 	{
-		private readonly Parser							_parser;
-		private readonly Tokenizer						_tokenizer;
-		private Dictionary<string, MathValue>		_variables = new();
-		//private Dictionary<string, Function>	_functions = new();
+		private readonly Parser					_parser;
+		private readonly Tokenizer				_tokenizer;
+		private Dictionary<string, MathValue>	_variables = new();
+		private Dictionary<string, Function>	_functions = new();
 
 		public MathEvaluator(Parser parser, Tokenizer tokenizer)
 		{
@@ -90,7 +90,7 @@ namespace ComputorV2.Core.Math
 		{
 			string result;
 
-			if (_parser.DetectInputType(input) == cmd_type.FUNCTION) // TODO: input type detection (currently always returning FUNCTION)
+			if (_parser.DetectInputType(input) == cmd_type.FUNCTION)
 				result = StoreFunction(input);
 			else
 				result = StoreVariable(input);
@@ -165,7 +165,23 @@ namespace ComputorV2.Core.Math
 
 		private string StoreFunction(string input)
 		{
-			return $"Storing function from {input}";
+			var parts = input.Split('=');
+			string leftSide = parts[0].Trim();
+
+			var match = System.Text.RegularExpressions.Regex.Match(leftSide, @"^([a-zA-Z][a-zA-Z0-9_]*)\s*\(\s*([a-zA-Z][a-zA-Z0-9_]*)\s*\)$");
+			if (!match.Success)
+				throw new ArgumentException($"Parsing: Invalid function definition: {leftSide}");
+
+			string functionName = match.Groups[1].Value;
+			string variable = match.Groups[2].Value;
+
+			string resolvedExpression = ResolveFunctionVariables(parts[1].Trim(), variable);
+			Polynomial poly = new Polynomial(resolvedExpression);
+
+			var function = new Function(functionName, variable, poly);
+			_functions[functionName] = function;
+
+			return function.ToString();
 		}
 
 		#endregion
@@ -223,6 +239,50 @@ namespace ComputorV2.Core.Math
 			return sb.ToString();
 		}
 
+		private string ResolveFunctionVariables(string expression, string excludedVariable)
+		{
+			StringBuilder sb = new StringBuilder();
+
+			for (int i = 0; i < expression.Length; i++)
+			{
+				if (Char.IsLetter(expression[i]) && expression[i] != 'i')
+				{
+					string var = expression[i].ToString();
+					if (i < expression.Length)
+					{
+						for (int j = i + 1; j < expression.Length; j++)
+						{
+							if (Char.IsLetterOrDigit(expression[j]) && expression[j] != 'i')
+								var += expression[j].ToString();
+							else
+								break;							
+						}
+					}
+
+					i += var.Length - 1;
+					
+					if (var == excludedVariable)
+					{
+						sb.Append(var);
+					}
+					else if (_variables.ContainsKey(var))
+					{
+						sb.Append(_variables[var]);
+					}
+					else
+					{
+						throw new ArgumentException($"Variable Substitution: expression contains undefined variables: {expression}", nameof(expression));
+					}
+				}
+				else
+				{
+					sb.Append(expression[i]);
+				}
+			}
+
+			return sb.ToString();
+		}
+
 		#endregion
 
 		#region Stored data printing
@@ -244,9 +304,7 @@ namespace ComputorV2.Core.Math
 
 		public void PrintFunctionList()
 		{
-			Console.WriteLine("Function list printing is WIP!");
-			// TODO: pending function implementation
-			/* if (_functions.Count == 0)
+			if (_functions.Count == 0)
 			{
 				Console.WriteLine("No functions defined!");
 				return;
@@ -255,8 +313,8 @@ namespace ComputorV2.Core.Math
 			Console.WriteLine("Defined functions:");
 			foreach (var item in _functions)
 			{
-				Console.WriteLine("{0} = {1}", item.Key, item.Value);
-			} */
+				Console.WriteLine(item.Value);
+			}
 		}
 
 		public void PrintAllLists()
@@ -270,6 +328,7 @@ namespace ComputorV2.Core.Math
 		#region Testing stuff
 
 		public Dictionary<string, MathValue> Variables => _variables;
+		public Dictionary<string, Function> Functions => _functions;
 
 		#endregion
 	}

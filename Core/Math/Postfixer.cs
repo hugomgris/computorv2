@@ -33,9 +33,6 @@ namespace ComputorV2.Core.Math
 			{
 				string currentToken = InfixStack.Pop();
 
-				// DEBUG
-				Console.WriteLine($"Managing token:{currentToken}");
-
 				if (IsOperator(currentToken))
 				{
 					while (operators.Count > 0 && IsOperator(operators.Peek()))
