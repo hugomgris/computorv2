@@ -9,6 +9,8 @@ using ComputorV2.Core.Lexing;
 
 namespace ComputorV2.Core.Types
 {
+	// This class looks like the work of a madman, but it works and handles quite a lot of complex input cases, so it is what it is
+	
 	public class Polynomial : MathValue, IEquatable<Polynomial>
 	{
 		private readonly Dictionary<int, MathValue> _terms;
@@ -32,7 +34,6 @@ namespace ComputorV2.Core.Types
 			_terms = new Dictionary<int, MathValue>();
 			GetVariable(expression);
 			ParseExpression(expression.Trim());
-			Console.WriteLine($"final poly->{this.ToString()}");
 		}
 
 		public Polynomial(MathValue constant)
@@ -92,7 +93,6 @@ namespace ComputorV2.Core.Types
 
 			if (_terms.ContainsKey(power))
 			{
-				Console.WriteLine($"_terms contains [{power}] and is going to add {_terms[power]} and {coefficient}");
 				_terms[power] = _terms[power].Add(coefficient);
 			}
 			else
@@ -583,15 +583,16 @@ namespace ComputorV2.Core.Types
 				return;
 			}
 
-			Console.WriteLine($"At parsed expression, expression is->{expression}");
-
+			while (CheckIfNeedsExpansion(expression))
+			{
+				expression = Expand(expression);
+			}
 			expression = NormalizeExpression(expression);
 
 			var terms = SplitIntoTerms(expression);
 			
 			foreach (var term in terms)
 			{
-				Console.WriteLine($"Parsing term->{term}");
 				if (string.IsNullOrWhiteSpace(term)) continue;
 				ParseTerm(term.Trim());
 			}
@@ -599,23 +600,12 @@ namespace ComputorV2.Core.Types
 
 		private string NormalizeExpression(string expression)
 		{
-			/* if (CheckIfNeedsExpansion(expression))
-				expression = Expand(expression); */
-
-			/* expression = System.Text.RegularExpressions.Regex.Replace(expression, @"(\d)([a-zA-Z])", "$1*$2");
-			expression = System.Text.RegularExpressions.Regex.Replace(expression, @"([a-zA-Z])(\d)", "$1*$2");
-			expression = System.Text.RegularExpressions.Regex.Replace(expression, @"([a-zA-Z])\^", "$1^"); */
 			expression = expression.Replace(" ", "");
 			
 			if (!expression.StartsWith("+") && !expression.StartsWith("-"))
 			{
 				expression = "+" + expression;
 			}
-
-			Console.WriteLine($"At normalizeExpression, expression->{expression}");
-
-			/* if (CheckIfNeedsExpansion(expression))
-				expression = Expand(expression); */
 			
 			return expression;
 		}
@@ -666,16 +656,16 @@ namespace ComputorV2.Core.Types
 
 			if (term.Contains(_originalVariable))
 				term = ConvertToXTerm(term);
-			Console.WriteLine($"ConvertedTerm->{term}");
+			
+			if (term.Count(f => f == 'x') > 1)
+			{
+				Console.WriteLine($"Computing term->{term}");
+				term = ComputeTerm(term);
+			}
 			
 			if (term.Contains("x") || term.Contains("X"))
 			{
-				if (term.Count(f => f == 'x') > 1)
-					term = ComputeTerm(term);
-				
 				var parts = term.Split(new char[] { 'x', 'X' }, StringSplitOptions.RemoveEmptyEntries);
-				Console.WriteLine($"Length of split parts -> {parts.Length}");
-				foreach (string part in parts) Console.WriteLine($"part->{part}");
 				
 				if (parts.Length == 0 || string.IsNullOrEmpty(parts[0]))
 				{
@@ -685,14 +675,12 @@ namespace ComputorV2.Core.Types
 				else
 				{
 					var coeffPart = parts[0].Replace("*", "");
-					Console.WriteLine($"coeffPart->{coeffPart}");
 					if (string.IsNullOrEmpty(coeffPart))
 					{
 						coefficient = new RationalNumber(1);
 					}
 					else
 					{
-						Console.WriteLine($"Trying to parse->{coeffPart}");
 						if (RationalNumber.TryParse(coeffPart, out var parsedCoeff))
 						{
 							coefficient = parsedCoeff!;
@@ -742,7 +730,6 @@ namespace ComputorV2.Core.Types
 
 		private void GetVariable(string expression)
 		{
-			Console.WriteLine($"expressionAAAAAAA->{expression}");
 			for (int i = 0; i < expression.Length; i++)
 			{
 				if (char.IsLetter(expression[i]))
@@ -787,8 +774,6 @@ namespace ComputorV2.Core.Types
 					newTerm += term[i].ToString();
 			}
 
-			Console.WriteLine($"ReversionToOriginal->{newTerm}");
-
 			return newTerm;
 		}
 
@@ -815,16 +800,15 @@ namespace ComputorV2.Core.Types
 			}
 
 			newTerm = newTerm.Replace("x", "");
-			Console.WriteLine($"at ComputeTerm, newTerm->{newTerm}");
 			
 			Tokenizer tokenizer = new Tokenizer();
 			List<string> tokens = tokenizer.Tokenize(newTerm);
-			foreach (string tok in tokens) Console.WriteLine(tok);
+			foreach(string tok in tokens) Console.WriteLine($"token->{tok}");
 			Postfix postfix = new Postfix(tokens);
 			MathValue value = postfix.Calculate();
+			Console.WriteLine($"value->{value}");
 
 			string? returnTerm = (containsVariable) ? value.ToString() + "x" : value.ToString();
-			Console.WriteLine($"returnTerm->{returnTerm}");
 			
 			return returnTerm!;
 		}
@@ -851,27 +835,33 @@ namespace ComputorV2.Core.Types
 					break;
 			}
 
-
 			string left = expression.Substring(0, openIndex);
 			string parenthesis = expression.Substring(openIndex);
-			string op = expression[closeIndex + 1].ToString();
+			string op;
+			if (closeIndex < expression.Length - 1)
+				op = expression[closeIndex + 1].ToString();
+			else
+				{
+					return expression.Replace("(", "").Replace(")", "");
+				}
 
 			int len = 0;
 
-			while(parenthesis[len] != ')') len++;
+			while(parenthesis[len] != ')')
+			{
+				len++;
+			}
+
 			len += 2;
-			while(char.IsDigit(parenthesis[len])) len++;
+			while(len < parenthesis.Length && char.IsDigit(parenthesis[len])) len++;
 
 			string right = parenthesis.Substring(len);
 			parenthesis = parenthesis.Substring(0, len);
 
 			parenthesis = ExecuteExpansion(parenthesis, op);
 
-			//TODO: more than one and nested parenthesis
-			/* if (CheckIfNeedsExpansion(expression))
-				Expand(expression); */
-
 			string result = left + parenthesis + right;
+
 			return result;
 		}
 
@@ -881,15 +871,35 @@ namespace ComputorV2.Core.Types
 			string left = parts[0].Trim('(', ')');
 			string right = parts[1];
 
+			// DEBUG
+			Console.WriteLine($"expression->{expression} resulted in left->{left} and right->{right} with op->{op}");
+
 			switch (op)
 			{
+				case "-":
+				case "+":
+					expression = expression.Replace("(", "").Replace(")", "");
+					break;
+
 				case "*":
 					expression = DistributeMultiplication(left, right);
 					break;
 				
-				default:
+				case "/":
+					expression = DistributeDivision(left, right);
 					break;
 
+				case "^":
+					if (right != "2")
+						throw new ArgumentException("Expansion: power operator (^) not supported for parenthesis expansion if power is higher than 2");
+					expression = DistributePower(left, right);
+					break;
+
+				case "%":
+					throw new ArgumentException("Expansion: modulo operator (%) not supported for parenthesis expansion");
+
+				default:
+					break;
 			}
 			
 			return expression;
@@ -928,7 +938,7 @@ namespace ComputorV2.Core.Types
 					if (accumulatedNumber.Contains("x"))
 					{
 						if (accumulatedNumber.Length > 1)
-							accumulatedNumber.Trim('x');
+							accumulatedNumber =  accumulatedNumber.Trim('x');
 						else
 							accumulatedNumber = "1";
 						decimal convertedNumber = decimal.Parse(accumulatedNumber);
@@ -949,6 +959,216 @@ namespace ComputorV2.Core.Types
 			}
 
 			return sb.ToString();
+		}
+
+		private string DistributeDivision(string left, string right)
+		{
+			StringBuilder sb = new StringBuilder();
+
+			string accumulatedNumber = "";
+			for (int i = 0; i < left.Length; i++)
+			{
+				if (char.IsDigit(left[i]) || left[i] == 'x')
+				{
+					if (i != left.Length - 1)
+						accumulatedNumber += left[i].ToString();
+					else
+					{
+						if (char.IsDigit(left[i]))
+							sb.Append((decimal.Parse(left[i].ToString()) / decimal.Parse(right)).ToString());
+						else if (left[i] == 'x')
+						{
+							if (accumulatedNumber.Length > 0)
+							{
+								sb.Append((decimal.Parse(accumulatedNumber) / decimal.Parse(right)).ToString() + "x");
+							}
+							else
+							{
+								sb.Append(right + "x");
+							}
+						}
+					}
+				}
+				else if ("+-*/&^".Contains(left[i]) || i == left.Length - 1)
+				{
+					if (accumulatedNumber.Contains("x"))
+					{
+						if (accumulatedNumber.Length > 1)
+							accumulatedNumber =  accumulatedNumber.Trim('x');
+						else
+							accumulatedNumber = "1";
+						decimal convertedNumber = decimal.Parse(accumulatedNumber);
+						decimal partial = convertedNumber / decimal.Parse(right);
+						sb.Append(partial.ToString() + "x");
+						sb.Append(left[i].ToString());
+						accumulatedNumber = "";
+					}
+					else
+					{
+						decimal convertedNumber = decimal.Parse(accumulatedNumber);
+						decimal partial = convertedNumber / decimal.Parse(right);
+						sb.Append(partial.ToString());
+						sb.Append(left[i].ToString());
+						accumulatedNumber = "";
+					}
+				}
+			}
+
+			return sb.ToString();
+		}
+
+		private string DistributePower(string left, string right)
+		{
+			Console.WriteLine($"At distributePower, left->{left} right->{right}");
+			string innerOp = "";
+
+			foreach (char c in left)
+			{
+				if (c == '+' || c == '-')
+					innerOp = c.ToString();
+			}
+
+			if (string.IsNullOrEmpty(innerOp))
+				throw new ArgumentException("Expansion: unsupported opperation inside parenthesis with power operator (^)");
+
+			if (innerOp == "+")
+			{
+				string[] parts = left.Split('+');
+				string a = parts[0];
+				string b = parts[1];
+
+				bool ax = false, bx = false;
+
+				if (a.Contains("x"))
+				{
+					ax = true;
+					if (a.Length == 1)
+						a = "1";
+					else
+						a = a.Replace("x", "");
+				}
+
+				if (a.Contains("x"))
+				{
+					bx = true;
+					if (b.Length == 1)
+						b = "1";
+					else
+						b = b.Replace("x", "");
+				}
+
+				decimal firstValue = decimal.Parse(a) * decimal.Parse(a);
+				decimal middleValue = decimal.Parse(a) * decimal.Parse(b) * 2;
+				decimal lastValue = decimal.Parse(b) * decimal.Parse(b);
+
+				string expanded = "";
+				if (ax)
+				{
+					expanded += firstValue.ToString() + "*x^2";
+				}
+				else
+				{
+					expanded += firstValue.ToString();
+				}
+
+				if (ax)
+				{
+					if (bx)
+					{
+						expanded += "+" + middleValue.ToString() + "*x^2";
+					}
+					else
+					{
+						expanded += "+" + middleValue.ToString() + "*x";
+					}
+				}
+				else
+				{
+					expanded += "+" + middleValue.ToString();
+				}
+
+				if (bx)
+				{
+					expanded += "+" + lastValue.ToString() + "*x^2";
+				}
+				else
+				{
+					expanded += "+" + lastValue.ToString();
+				}
+
+				Console.WriteLine($"POSITIVEEXPANDED->{expanded}");
+				return expanded;
+			}
+			else if (innerOp == "-")
+			{
+				string[] parts = left.Split('-');
+				string a = parts[0];
+				string b = parts[1];
+
+				bool ax = false, bx = false;
+
+				if (a.Contains("x"))
+				{
+					ax = true;
+					if (a.Length == 1)
+						a = "1";
+					else
+						a = a.Replace("x", "");
+				}
+
+				if (a.Contains("x"))
+				{
+					bx = true;
+					if (b.Length == 1)
+						b = "1";
+					else
+						b = b.Replace("x", "");
+				}
+
+				decimal firstValue = decimal.Parse(a) * decimal.Parse(a);
+				decimal middleValue = decimal.Parse(a) * decimal.Parse(b) * 2;
+				decimal lastValue = decimal.Parse(b) * decimal.Parse(b);
+
+				string expanded = "";
+				if (ax)
+				{
+					expanded += firstValue.ToString() + "*x^2";
+				}
+				else
+				{
+					expanded += firstValue.ToString();
+				}
+
+				if (ax)
+				{
+					if (bx)
+					{
+						expanded += "-" + middleValue.ToString() + "*x^2";
+					}
+					else
+					{
+						expanded += "-" + middleValue.ToString() + "*x";
+					}
+				}
+				else
+				{
+					expanded += "-" + middleValue.ToString();
+				}
+
+				if (bx)
+				{
+					expanded += "+" + lastValue.ToString() + "*x^2";
+				}
+				else
+				{
+					expanded += "+" + lastValue.ToString();
+				}
+
+				Console.WriteLine($"NEGATIVEEXPANDED->{expanded}");
+				return expanded;
+			}
+
+			throw new ArgumentException("Expansion: power expansion went wrong");
 		}
 
 		#endregion

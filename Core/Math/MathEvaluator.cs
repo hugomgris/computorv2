@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Linq;
 using ComputorV2.Core.Types;
@@ -24,9 +25,10 @@ namespace ComputorV2.Core.Math
 
 		public string Compute(string input)
 		{
+			input = input.Replace(" ", "");
 			string result;
 
-			if (_parser.DetectInputType(input) == cmd_type.FUNCTION) // TODO: input type detection (currently always returning FUNCTION)
+			if (_parser.DetectInputType(input) == cmd_type.FUNCTION)
 				result = ComputeFunction(input);
 			else
 				result = ComputeExpression(input);
@@ -79,7 +81,50 @@ namespace ComputorV2.Core.Math
 
 		private string ComputeFunction(string input)
 		{
-			return $"Computing function (WIP)";
+			if (input.IndexOf('?') - input.IndexOf('=') == 1)
+				return SolveFunction(input);
+
+			return $"Computing function (WIP) -> {input}";
+		}
+
+		#endregion
+
+		#region Function solve pipeline
+
+		private string SolveFunction(string input)
+		{
+			var parts = input.Split('=');
+			string leftSide = parts[0].Trim();
+
+			string functionName = leftSide.Substring(0, leftSide.IndexOf('('));
+			string variable = leftSide.Substring(leftSide.IndexOf('(') + 1);
+			variable = variable.Trim(')');
+			Console.WriteLine($"variable->{variable}");
+
+			foreach (char c in variable)
+			{
+				if (!char.IsDigit(c) && !_variables.ContainsKey(variable))
+					throw new ArgumentException("Function Solve: variable is undefined");
+			}
+
+			if (!_functions.ContainsKey(functionName))
+				throw new ArgumentException("Function solve: function is not defined");
+
+			if (!decimal.TryParse(variable, out _))
+				variable = _variables[variable].ToString()!;
+			
+			Function function = _functions[functionName];
+			string functionString = function.ToString();
+
+			functionString = functionString.Replace(function.Variable, variable);
+
+			string[] split = functionString.Split('=');
+			
+			List<string> tokens = _tokenizer.Tokenize(split[1]);
+			Postfix postfix = new Postfix(tokens);
+			MathValue result = postfix.Calculate();
+			
+			return result.ToString()!;
 		}
 
 		#endregion
@@ -88,6 +133,8 @@ namespace ComputorV2.Core.Math
 
 		public string Assign(string input)
 		{
+			input = input.Replace(" ", "");
+
 			string result;
 
 			if (_parser.DetectInputType(input) == cmd_type.FUNCTION)
@@ -99,7 +146,7 @@ namespace ComputorV2.Core.Math
 		}
 
 		private string StoreVariable(string input)
-		{
+		{		
 			string[] parts = input.Split('=');
 			if (parts.Length != 2)
 				throw new ArgumentException($"RationalNumber: Parser: expression can only contain one '=': {input}", nameof(input));
@@ -177,9 +224,6 @@ namespace ComputorV2.Core.Math
 
 			string resolvedExpression = ResolveFunctionVariables(parts[1].Trim(), variable);
 			Polynomial poly = new Polynomial(resolvedExpression);
-			
-			// DEBUG
-			//Console.WriteLine($"poly->{poly}");
 
 			var function = new Function(functionName, variable, poly);
 			_functions[functionName] = function;

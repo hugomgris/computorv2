@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Text;
+using System.Text.RegularExpressions;
 
 using ComputorV2.Core.Math;
 using ComputorV2.Core.Types;
@@ -10,6 +11,7 @@ namespace ComputorV2.Core.Lexing
 	public enum cmd_type
 	{
 		FUNCTION,
+		FUNCTION_SOLVE_VALUE,
 		ASSIGNMENT,
 		RATIONAL,
 		COMPLEX,
@@ -31,15 +33,19 @@ namespace ComputorV2.Core.Lexing
 	{
 		public cmd_type DetectInputType(string input)
 		{
+			// This should only have one regex check but regex is hell and I'm going to lose my mind
+			Regex regex = new Regex("[A-Za-z]+\\([0-9]+\\)", RegexOptions.IgnoreCase);
+			if (regex.IsMatch(input))
+				return cmd_type.FUNCTION;
+
 			var parts = input.Split('=');
 			string leftSide = parts[0].Trim();
 
-			var match = System.Text.RegularExpressions.Regex.Match(leftSide, @"^([a-zA-Z][a-zA-Z0-9_]*)\s*\(\s*([a-zA-Z][a-zA-Z0-9_]*)\s*\)$");
+			var match = Regex.Match(leftSide, @"^([a-zA-Z][a-zA-Z0-9_]*)\s*\(\s*([a-zA-Z][a-zA-Z0-9_]*)\s*\)$");
 			if (match.Success)
 				return cmd_type.FUNCTION;
 			else
-				return cmd_type.ASSIGNMENT;
-			
+				return cmd_type.ASSIGNMENT;	
 		}
 
 		public cmd_type DetectValueType(string value)

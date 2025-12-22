@@ -197,18 +197,7 @@ namespace ComputorV2.Interactive
 				result = _mathEvaluator.Assign(trimmed);
 			else
 				result = "";
-			/* cmd_type type = _parser.DetectInputType(input);
-			switch (type)
-			{
-				case cmd_type.FUNCTION:
-					return ($"{input} is of type FUNCTION");
-
-				case cmd_type.RATIONAL:
-					return ($"{input} is of type RATIONAL");
-
-				default:
-					return($"{input} is of UNKNOWN type");
-			} */
+				
 			return result;
 		}
 

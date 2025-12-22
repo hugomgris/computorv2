@@ -24,31 +24,39 @@ namespace ComputorV2.Tests
 		public void Function_AssignationTests()
 		{
 			_evaluator.Assign("funA(x) = 2*x^5 + 4x^2 - 5*x + 4");
-			try
-			{
-				_evaluator.Assign("funB(y) = 43 * y / (4 % 2 * y)");
-			}
-			catch {}
-
+			_evaluator.Assign("funB(y) = 43 * y / (4 % 2 * y)");
 			_evaluator.Assign("funC(z) = -2 * z - 5");
 			_evaluator.Assign("funD(varblehell) = 2 * 4 + varblehell");
-			//_evaluator.Assign("funE(x) = 4 -5 + (x + 2)^2 - 4");
-			//_evaluator.Assign("funF(x) = 4 - 5 + (x + 2) * 2 - 4");
+			_evaluator.Assign("funE(x) =4-5+(x+2)+2-4");
+			_evaluator.Assign("funE2(x) =4-5+(x+2)-200-4");
+			_evaluator.Assign("funF(x)=4-5+(x+2)*2-4+(3x+5)*18");
+			_evaluator.Assign("funG(x)=4+5+(x+2)/2+4 + (15 + 15x)/2");
+			_evaluator.Assign("funH(x) = 4-5+(x+2)^2-4");
+			_evaluator.Assign("funI(x) = 4-5+(x-2)^2-4");
 
 			Dictionary<string, Function> functions = _evaluator.Functions;
 
 			Assert.True(functions.ContainsKey("funA"));
-			Assert.False(functions.ContainsKey("funB"));
+			Assert.True(functions.ContainsKey("funB"));
 			Assert.True(functions.ContainsKey("funC"));
 			Assert.True(functions.ContainsKey("funD"));
-			//Assert.True(functions.ContainsKey("funE"));
-			//Assert.True(functions.ContainsKey("funF"));
+			Assert.True(functions.ContainsKey("funE"));
+			Assert.True(functions.ContainsKey("funE2"));
+			Assert.True(functions.ContainsKey("funF"));
+			Assert.True(functions.ContainsKey("funG"));
+			Assert.True(functions.ContainsKey("funH"));
+			Assert.True(functions.ContainsKey("funI"));
 
 			Assert.Equal("2 * x^5 + 4 * x^2 - 5 * x + 4", functions["funA"].Expression.ToString());
+			Assert.Equal("3/4 * y", functions["funB"].Expression.ToString());
 			Assert.Equal("-2 * z - 5", functions["funC"].Expression.ToString());
 			Assert.Equal("varblehell + 8", functions["funD"].Expression.ToString());
-			//Assert.Equal(new Function("funE", "x", new Polynomial("(x + 2)^2 - 5")), functions["funE"]);
-			//Assert.Equal(new Function("funF", "x", new Polynomial("2x-1")), functions["funF"]);
+			Assert.Equal("x - 1", functions["funE"].Expression.ToString());
+			Assert.Equal("x - 203", functions["funE2"].Expression.ToString());
+			Assert.Equal("56 * x + 89", functions["funF"].Expression.ToString());
+			Assert.Equal("8 * x + 43/2", functions["funG"].Expression.ToString());
+			Assert.Equal("x^2 + 4 * x - 1", functions["funH"].Expression.ToString());
+			Assert.Equal("x^2 - 4 * x - 1", functions["funI"].Expression.ToString());
 		}
 
 		/* [Fact]
@@ -60,20 +68,4 @@ namespace ComputorV2.Tests
 			Assert.Equal(m2, new Matrix("[[5+35i,50-898i]]"));
 		} */
 	}
-
-
-	/*
-	Last case here?
-	$./computorv2
-		> varA = 2 + 4 *2 - 5 %4 + 2 * (4 + 5)
-		27
-		> varB = 2 * varA - 5 %4
-		53
-		> funA(x) = varA + varB * 4 - 1 / 2 + x
-		238.5 + x
-		> varC = 2 * varA - varB
-		1
-		> varD = funA(varC)
-		239.5
-	*/
 }
