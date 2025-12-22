@@ -25,7 +25,6 @@ namespace ComputorV2.Core.Types
 
 			if (checkIfSimpleNegativeComplexNumber(value, out simpleNegative))
 			{
-				Console.WriteLine("HERE");
 				_real = 0;
 				_imaginary = new RationalNumber(simpleNegative);
 				return;

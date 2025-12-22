@@ -177,6 +177,9 @@ namespace ComputorV2.Core.Math
 
 			string resolvedExpression = ResolveFunctionVariables(parts[1].Trim(), variable);
 			Polynomial poly = new Polynomial(resolvedExpression);
+			
+			// DEBUG
+			//Console.WriteLine($"poly->{poly}");
 
 			var function = new Function(functionName, variable, poly);
 			_functions[functionName] = function;

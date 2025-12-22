@@ -4,11 +4,15 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 
+using ComputorV2.Core.Math;
+using ComputorV2.Core.Lexing;
+
 namespace ComputorV2.Core.Types
 {
 	public class Polynomial : MathValue, IEquatable<Polynomial>
 	{
 		private readonly Dictionary<int, MathValue> _terms;
+		private string								_originalVariable = "x";
 
 		#region Constructors
 
@@ -26,7 +30,9 @@ namespace ComputorV2.Core.Types
 		public Polynomial(string expression)
 		{
 			_terms = new Dictionary<int, MathValue>();
+			GetVariable(expression);
 			ParseExpression(expression.Trim());
+			Console.WriteLine($"final poly->{this.ToString()}");
 		}
 
 		public Polynomial(MathValue constant)
@@ -37,6 +43,7 @@ namespace ComputorV2.Core.Types
 		public Polynomial(MathValue linearCoeff, MathValue constant)
 		{
 			_terms = new Dictionary<int, MathValue>();
+
 			if (!constant.IsZero) _terms[0] = constant;
 			if (!linearCoeff.IsZero) _terms[1] = linearCoeff;
 		}
@@ -84,7 +91,10 @@ namespace ComputorV2.Core.Types
 			if (coefficient.IsZero) return;
 
 			if (_terms.ContainsKey(power))
+			{
+				Console.WriteLine($"_terms contains [{power}] and is going to add {_terms[power]} and {coefficient}");
 				_terms[power] = _terms[power].Add(coefficient);
+			}
 			else
 				_terms[power] = coefficient;
 
@@ -519,11 +529,11 @@ namespace ComputorV2.Core.Types
 
 			if (power == 1)
 			{
-				varStr = coeffStr.Length! > 0 ? " * X" : "X";
+				varStr = coeffStr.Length! > 0 ? " * " + _originalVariable : _originalVariable;
 			}
 			else if (power > 1)
 			{
-				varStr = coeffStr.Length > 0 ? $" * X^{power}" : $"X^{power}";
+				varStr = coeffStr.Length > 0 ? $" * " + _originalVariable + $"^{power}" : _originalVariable + $"^{power}";
 			}
 
 			return $"{sign}{coeffStr}{varStr}";
@@ -573,12 +583,15 @@ namespace ComputorV2.Core.Types
 				return;
 			}
 
+			Console.WriteLine($"At parsed expression, expression is->{expression}");
+
 			expression = NormalizeExpression(expression);
 
 			var terms = SplitIntoTerms(expression);
 			
 			foreach (var term in terms)
 			{
+				Console.WriteLine($"Parsing term->{term}");
 				if (string.IsNullOrWhiteSpace(term)) continue;
 				ParseTerm(term.Trim());
 			}
@@ -589,9 +602,9 @@ namespace ComputorV2.Core.Types
 			/* if (CheckIfNeedsExpansion(expression))
 				expression = Expand(expression); */
 
-			expression = System.Text.RegularExpressions.Regex.Replace(expression, @"(\d)([a-zA-Z])", "$1*$2");
+			/* expression = System.Text.RegularExpressions.Regex.Replace(expression, @"(\d)([a-zA-Z])", "$1*$2");
 			expression = System.Text.RegularExpressions.Regex.Replace(expression, @"([a-zA-Z])(\d)", "$1*$2");
-			expression = System.Text.RegularExpressions.Regex.Replace(expression, @"([a-zA-Z])\^", "$1^");
+			expression = System.Text.RegularExpressions.Regex.Replace(expression, @"([a-zA-Z])\^", "$1^"); */
 			expression = expression.Replace(" ", "");
 			
 			if (!expression.StartsWith("+") && !expression.StartsWith("-"))
@@ -599,7 +612,7 @@ namespace ComputorV2.Core.Types
 				expression = "+" + expression;
 			}
 
-			Console.WriteLine($"expression->{expression}");
+			Console.WriteLine($"At normalizeExpression, expression->{expression}");
 
 			/* if (CheckIfNeedsExpansion(expression))
 				expression = Expand(expression); */
@@ -650,10 +663,19 @@ namespace ComputorV2.Core.Types
 			
 			MathValue coefficient = new RationalNumber(1);
 			int power = 0;
+
+			if (term.Contains(_originalVariable))
+				term = ConvertToXTerm(term);
+			Console.WriteLine($"ConvertedTerm->{term}");
 			
 			if (term.Contains("x") || term.Contains("X"))
 			{
+				if (term.Count(f => f == 'x') > 1)
+					term = ComputeTerm(term);
+				
 				var parts = term.Split(new char[] { 'x', 'X' }, StringSplitOptions.RemoveEmptyEntries);
+				Console.WriteLine($"Length of split parts -> {parts.Length}");
+				foreach (string part in parts) Console.WriteLine($"part->{part}");
 				
 				if (parts.Length == 0 || string.IsNullOrEmpty(parts[0]))
 				{
@@ -663,12 +685,14 @@ namespace ComputorV2.Core.Types
 				else
 				{
 					var coeffPart = parts[0].Replace("*", "");
+					Console.WriteLine($"coeffPart->{coeffPart}");
 					if (string.IsNullOrEmpty(coeffPart))
 					{
 						coefficient = new RationalNumber(1);
 					}
 					else
 					{
+						Console.WriteLine($"Trying to parse->{coeffPart}");
 						if (RationalNumber.TryParse(coeffPart, out var parsedCoeff))
 						{
 							coefficient = parsedCoeff!;
@@ -688,6 +712,12 @@ namespace ComputorV2.Core.Types
 			}
 			else
 			{
+				Tokenizer tokenizer = new Tokenizer();
+				List<string> tokens = tokenizer.Tokenize(term);
+				Postfix postfix = new Postfix(tokens);
+				MathValue value = postfix.Calculate();
+				term = value.ToString()!;
+				
 				if (RationalNumber.TryParse(term, out var parsedCoeff))
 				{
 					coefficient = parsedCoeff!;
@@ -710,6 +740,95 @@ namespace ComputorV2.Core.Types
 
 		#region Helpers
 
+		private void GetVariable(string expression)
+		{
+			Console.WriteLine($"expressionAAAAAAA->{expression}");
+			for (int i = 0; i < expression.Length; i++)
+			{
+				if (char.IsLetter(expression[i]))
+				{
+					int j = i;
+					int count = 0;
+					while (j < expression.Length && char.IsLetter(expression[j++]))
+						count++;
+					_originalVariable = expression.Substring(i, count);
+					i += _originalVariable.Length;
+				}
+			}
+		}
+
+		private string ConvertToXTerm(string term)
+		{
+			string newTerm = "";
+			
+			for (int i = 0; i < term.Length; i++)
+			{
+				if (term[i] == _originalVariable[0])
+				{
+					newTerm += "x";
+					i += _originalVariable.Length - 1;
+				}
+				else
+					newTerm += term[i].ToString();
+			}
+
+			return newTerm;
+		}
+
+		private string ConvertToOriginalVariableTerm(string term)
+		{
+			string newTerm = "";
+
+			for (int i = 0; i < term.Length; i++)
+			{
+				if (term[i] == 'x' || term[i] == 'X')
+					newTerm += _originalVariable;
+				else
+					newTerm += term[i].ToString();
+			}
+
+			Console.WriteLine($"ReversionToOriginal->{newTerm}");
+
+			return newTerm;
+		}
+
+		private string ComputeTerm(string term)
+		{
+			if (term.Length == 1 && term.Contains("x"))
+				return "x";
+			bool containsVariable = term.Contains("x");
+			
+			term = term.Replace("X", "x");
+			string newTerm = "";
+
+			for (int i = 0; i < term.Length; i++)
+			{
+				if (term[i] == '*')
+				{
+					if (term[i + 1] == 'x')
+						continue;
+					else
+						newTerm += term[i].ToString();
+				}
+				else
+					newTerm += term[i].ToString();
+			}
+
+			newTerm = newTerm.Replace("x", "");
+			Console.WriteLine($"at ComputeTerm, newTerm->{newTerm}");
+			
+			Tokenizer tokenizer = new Tokenizer();
+			List<string> tokens = tokenizer.Tokenize(newTerm);
+			foreach (string tok in tokens) Console.WriteLine(tok);
+			Postfix postfix = new Postfix(tokens);
+			MathValue value = postfix.Calculate();
+
+			string? returnTerm = (containsVariable) ? value.ToString() + "x" : value.ToString();
+			Console.WriteLine($"returnTerm->{returnTerm}");
+			
+			return returnTerm!;
+		}
+		
 		private bool CheckIfNeedsExpansion(string expression)
 		{
 			var match = System.Text.RegularExpressions.Regex.Match(expression, @"\((.*)\)");
