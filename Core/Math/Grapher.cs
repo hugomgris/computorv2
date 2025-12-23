@@ -91,7 +91,7 @@ namespace ComputorV2.Core.Math
 			foreach (var term in polynomial.GetTerms())
 			{
 				int power = term.Key;
-				double coefficient = double.Parse(term.Value.ToString());
+				double coefficient = double.Parse(term.Value.ToString()!);
 				
 				double termValue = coefficient;
 				

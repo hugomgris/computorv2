@@ -138,7 +138,6 @@ namespace ComputorV2.Interactive
 						{
 							string[] split = result.Split("=");
 							Polynomial polynomial = new Polynomial(split[split.Length - 1]);
-							Console.WriteLine($"trying to draw ->{polynomial}");
 							Grapher.DrawPolynomialGraph(polynomial);
 						}
 						
@@ -247,7 +246,12 @@ namespace ComputorV2.Interactive
 			}
 			
 			if (input.Contains('=') && input.Contains('?'))
-				result = _mathEvaluator.Compute(trimmed);
+			{
+				if (input.Contains("||"))
+					result = _mathEvaluator.ProcessMatrixNorm(input);
+				else
+					result = _mathEvaluator.Compute(trimmed);
+			}
 			else if (input.Contains('='))
 				result = _mathEvaluator.Assign(trimmed);
 			else
@@ -288,7 +292,7 @@ namespace ComputorV2.Interactive
 		{
 			if (_commandResults.Count == 0)
 			{
-				Console.WriteLine("No commands registered");
+				Console.WriteLine("No commands registered\n");
 				return;
 			}
 
@@ -298,6 +302,7 @@ namespace ComputorV2.Interactive
 			{
 				Console.WriteLine("{0} -> {1}", item.Key, item.Value);
 			}
+			Console.WriteLine();
 		}
 
 		public void Stop()

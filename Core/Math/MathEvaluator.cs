@@ -432,13 +432,38 @@ namespace ComputorV2.Core.Math
 
 		#endregion
 
+		#region Matrix Norm Bonus through function
+
+		public string ProcessMatrixNorm(string input)
+		{
+			input = input.Replace("||", "").Replace("=", "").Replace("?", "");
+			if (input.EndsWith('1'))
+				input = input.Substring(0, input.Length - 1);
+			string result = "";
+
+
+			if (_variables.ContainsKey(input))
+			{
+				string matrixString = _variables[input].ToString()!;
+				matrixString = ("[" + matrixString.Replace("\n", ";") + "]").Replace(" ", "");
+				Matrix m = new Matrix(matrixString);
+				result = m.Norm().ToString()!;
+			}
+			else
+				throw new ArgumentException("Matrix norm: please store the matrix first, then call the norm computation on stored value");
+
+			return result!;
+		}
+
+		#endregion
+
 		#region Stored data printing
 
 		public void PrintVariableList()
 		{
 			if (_variables.Count == 0)
 			{
-				Console.WriteLine("No variables defined!");
+				Console.WriteLine("No variables defined!\n");
 				return;
 			}
 
@@ -447,13 +472,14 @@ namespace ComputorV2.Core.Math
 			{
 				Console.WriteLine("{0} = {1}", item.Key, item.Value);
 			}
+			Console.WriteLine();
 		}
 
 		public void PrintFunctionList()
 		{
 			if (_functions.Count == 0)
 			{
-				Console.WriteLine("No functions defined!");
+				Console.WriteLine("No functions defined!\n");
 				return;
 			}
 
@@ -462,6 +488,7 @@ namespace ComputorV2.Core.Math
 			{
 				Console.WriteLine(item.Value);
 			}
+			Console.WriteLine();
 		}
 
 		public void PrintAllLists()

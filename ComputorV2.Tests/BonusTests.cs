@@ -38,5 +38,23 @@ namespace ComputorV2.Tests
 			Assert.Equal(i1.ToString(), m1.Inverse().ToString());
 			Assert.Equal(i2.ToString(), m2.Inverse().ToString());
 		}
+
+		[Fact]
+		public void BonusTests_MatrixNorm()
+		{
+			_evaluator.Assign("m1=[[1,2,3];[4,5,6];[7,8,9]]");
+			_evaluator.Assign("m2=[[1,2];[3,4]]");
+
+			Dictionary<string, MathValue> vars = _evaluator.Variables;
+
+			Assert.True(vars.ContainsKey("m1"));
+			Assert.True(vars.ContainsKey("m2"));
+
+			Matrix m1 = (Matrix)vars["m1"];
+			Matrix m2 = (Matrix)vars["m2"];
+			
+			Assert.Equal("18", m1.Norm().ToString());
+			Assert.Equal("6", m2.Norm().ToString());
+		}
 	}
 }

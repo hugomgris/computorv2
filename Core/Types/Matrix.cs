@@ -352,6 +352,25 @@ namespace ComputorV2.Core.Types
 			return CalculateDeterminantByExpansion();
 		}
 
+		public MathValue Norm()
+		{
+			RationalNumber norm = RationalNumber.Zero;
+
+			for (int i = 0; i < _cols; i++)
+			{
+				RationalNumber partial = RationalNumber.Zero;
+				for (int j = 0; j < _rows; j++)
+				{
+					partial += new RationalNumber(_elements[j, i].ToString()!);
+				}
+
+				if (partial > norm)
+					norm = partial;
+			}
+
+			return norm;
+		}
+
 		private MathValue CalculateDeterminantByExpansion()
 		{
 			MathValue det = RationalNumber.Zero;
