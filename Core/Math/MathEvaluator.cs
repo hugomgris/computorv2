@@ -29,7 +29,7 @@ namespace ComputorV2.Core.Math
 			string result;
 
 			if (_parser.DetectInputType(input) == cmd_type.FUNCTION)
-				result = ComputeFunction(input);
+				result = ComputeFunction(input, out _);
 			else
 				result = ComputeExpression(input);
 
@@ -79,12 +79,87 @@ namespace ComputorV2.Core.Math
 			return result.ToString();
 		}
 
-		private string ComputeFunction(string input)
+		public string ComputeFunction(string input, out List<MathValue>? solutions)
 		{
+			if (new[] { "+", "-", "/", "*", "%", "^" }.Any(c => input.Contains(c)))
+			{
+				solutions = null;
+				return ComputeMultipleFunctions(input);
+			}
 			if (input.IndexOf('?') - input.IndexOf('=') == 1)
+			{
+				solutions = null;
 				return SolveFunction(input);
+			}
 
-			return $"Computing function (WIP) -> {input}";
+			string right = input.Substring(input.IndexOf('='), input.IndexOf('?') - input.IndexOf('='));
+			string subRight = "";
+
+			foreach (char c in right)
+			{
+				if (!char.IsDigit(c))
+				{
+					subRight = SubstituteVariables(right);
+					break;
+				}
+			}
+
+			if (!string.IsNullOrWhiteSpace(subRight))
+				input = input.Replace(right, subRight);
+			else
+				subRight = right;
+
+			string left = input.Substring(0, input.IndexOf('('));
+			if (_functions.ContainsKey(left))
+				left = _functions[left].Expression.ToString()!;
+			else
+				throw new ArgumentException("Function Computation: function not defined");
+
+			subRight = subRight.Replace("=", "");
+			string polyString = left!;
+			if (decimal.Parse(subRight) > 0)
+			{
+				polyString = polyString + "-" + subRight;
+			}
+			else
+				polyString = polyString + "+" + subRight;
+
+			
+			Console.WriteLine($"polystring->{polyString}");
+			Polynomial poly = new Polynomial(polyString);
+			Console.WriteLine($"poly->{poly}");
+
+			solutions = poly.Solve();
+			
+			Console.WriteLine($"{solutions.Count} solutions:");
+
+			foreach(MathValue sol in solutions) Console.WriteLine(sol);
+
+			return $"";
+		}
+
+		private string ComputeMultipleFunctions(string input)
+		{
+			string operators = "";
+
+			foreach (char c in input)
+				if ("+-*/^%".Contains(c))
+					operators += c.ToString();
+			
+			string [] functions = input.Split(new Char[] { '+', '-', '*', '/', '%', '^', '=', '?' },
+                                	StringSplitOptions.RemoveEmptyEntries);
+
+			foreach (string function in functions)
+			{
+				input = input.Replace(function, SolveFunction(function));
+			}
+
+			input = input.Replace("?", "").Replace("=", "");
+
+			List<string> tokens = _tokenizer.Tokenize(input);
+			Postfix postfix = new Postfix(tokens);
+
+			return postfix.Calculate().ToString()!;
 		}
 
 		#endregion
@@ -99,7 +174,6 @@ namespace ComputorV2.Core.Math
 			string functionName = leftSide.Substring(0, leftSide.IndexOf('('));
 			string variable = leftSide.Substring(leftSide.IndexOf('(') + 1);
 			variable = variable.Trim(')');
-			Console.WriteLine($"variable->{variable}");
 
 			foreach (char c in variable)
 			{
@@ -158,7 +232,9 @@ namespace ComputorV2.Core.Math
 			else if (_parser.ValidateVariableName(parts[0]) == var_error.NOALPHA)
 				throw new ArgumentException($"Assignation: variable name must contain at least one alphabetical character: {input}", nameof(input));
 			
-			if (HasVariables(parts[1]))
+			if (_parser.DetectInputType(parts[1]) == cmd_type.FUNCTION)
+				parts[1] = SolveFunction(parts[1]);
+			else if (HasVariables(parts[1]))
 				parts[1] = SubstituteVariables(parts[1]);
 
 			if (_parser.DetectValueType(parts[1]) == cmd_type.MATRIX)

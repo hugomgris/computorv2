@@ -659,7 +659,6 @@ namespace ComputorV2.Core.Types
 			
 			if (term.Count(f => f == 'x') > 1)
 			{
-				Console.WriteLine($"Computing term->{term}");
 				term = ComputeTerm(term);
 			}
 			
@@ -803,10 +802,8 @@ namespace ComputorV2.Core.Types
 			
 			Tokenizer tokenizer = new Tokenizer();
 			List<string> tokens = tokenizer.Tokenize(newTerm);
-			foreach(string tok in tokens) Console.WriteLine($"token->{tok}");
 			Postfix postfix = new Postfix(tokens);
 			MathValue value = postfix.Calculate();
-			Console.WriteLine($"value->{value}");
 
 			string? returnTerm = (containsVariable) ? value.ToString() + "x" : value.ToString();
 			
@@ -870,9 +867,6 @@ namespace ComputorV2.Core.Types
 			string[] parts = expression.Split(op);
 			string left = parts[0].Trim('(', ')');
 			string right = parts[1];
-
-			// DEBUG
-			Console.WriteLine($"expression->{expression} resulted in left->{left} and right->{right} with op->{op}");
 
 			switch (op)
 			{
@@ -1019,7 +1013,6 @@ namespace ComputorV2.Core.Types
 
 		private string DistributePower(string left, string right)
 		{
-			Console.WriteLine($"At distributePower, left->{left} right->{right}");
 			string innerOp = "";
 
 			foreach (char c in left)
@@ -1095,8 +1088,6 @@ namespace ComputorV2.Core.Types
 				{
 					expanded += "+" + lastValue.ToString();
 				}
-
-				Console.WriteLine($"POSITIVEEXPANDED->{expanded}");
 				return expanded;
 			}
 			else if (innerOp == "-")
@@ -1164,7 +1155,6 @@ namespace ComputorV2.Core.Types
 					expanded += "+" + lastValue.ToString();
 				}
 
-				Console.WriteLine($"NEGATIVEEXPANDED->{expanded}");
 				return expanded;
 			}
 

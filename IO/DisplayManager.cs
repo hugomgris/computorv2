@@ -61,7 +61,7 @@ namespace ComputorV2.IO
 		{	
 			if (_historyManager.Count > 0)
 			{
-				DisplayInColor($"Init info: Loaded {_historyManager.Count} commands from history", ConsoleColor.DarkMagenta); // DEBUG ?
+				DisplayInColor($"Init info: Loaded {_historyManager.Count} commands from history", ConsoleColor.DarkMagenta);
 				Console.WriteLine();
 			}
 

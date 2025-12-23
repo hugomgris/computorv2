@@ -119,17 +119,22 @@ namespace ComputorV2.Tests
 		{
 			_evaluator.Assign("varA=2+4*2-5%4+2*(4 + 5)");
 			_evaluator.Assign("varB=2*varA-5%4");
+			_evaluator.Assign("funA(x) = varA + varB * 4 - 1 / 2 + x");
 			_evaluator.Assign("varC=2*varA-varB");
-			//Missing a function test (WIP)
+			_evaluator.Assign("varD=funA(varC)");
 
 			Dictionary<string, MathValue> vars = _evaluator.Variables;
+			Dictionary<string, Function> functions = _evaluator.Functions;
 			Assert.True(vars.ContainsKey("varA"));
 			Assert.True(vars.ContainsKey("varB"));
+			Assert.True(functions.ContainsKey("funA"));
 			Assert.True(vars.ContainsKey("varC"));
+			Assert.True(vars.ContainsKey("varD"));
 
 			Assert.Equal(new RationalNumber(27), vars["varA"]);
 			Assert.Equal(new RationalNumber(53), vars["varB"]);
 			Assert.Equal(new RationalNumber(1), vars["varC"]);
+			Assert.Equal("479/2", vars["varD"].ToString());
 		}
 
 		[Fact]
@@ -149,7 +154,6 @@ namespace ComputorV2.Tests
 		[Fact]
 		public void SubjectTests_Computation_Functions()
 		{
-			// TODO: test "funA(2) + funB(4) = ?"
 			_evaluator.Assign("funA(x) = 2 * 4 + x");
 			_evaluator.Assign("funB(x) = 4 -5 + (x + 2)^2 - 4");
 			_evaluator.Assign("funC(x) = 4x + 5 - 2");
@@ -162,6 +166,27 @@ namespace ComputorV2.Tests
 
 			string c1 = _evaluator.Compute("funC(3) = ?");
 			Assert.Equal("15", c1);
+			string c2 = _evaluator.Compute("funA(2) + funB(4) = ?");
+			Assert.Equal("41", c2);
+		}
+
+		[Fact]
+		public void SubjectTests_Function_Computation()
+		{
+			_evaluator.Assign("funA(x) = x^2 + 2x + 1");
+			_evaluator.Assign("y = 0");
+			
+			Dictionary<string, MathValue> vars = _evaluator.Variables;
+			Assert.True(vars.ContainsKey("y"));
+			Dictionary<string, Function> functions = _evaluator.Functions;
+			Assert.True(functions.ContainsKey("funA"));
+
+			List<MathValue> solutions;
+
+			_evaluator.ComputeFunction("funA(x) = y ?", out solutions);
+			
+			Assert.Equal(1, solutions.Count);
+			Assert.Equal("-1", solutions[0].ToString());
 		}
 
 		[Fact]		

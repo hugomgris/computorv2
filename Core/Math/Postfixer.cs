@@ -82,16 +82,11 @@ namespace ComputorV2.Core.Math
 				output.Push(operators.Pop());
 			}
 
-			// DEBUG
-			//foreach(string tok in output) Console.WriteLine($"outputtok->{tok}");
-
 			Stack<string> reversedStack = new Stack<string>();
 			while (output.Count > 0) reversedStack.Push(output.Pop());
 
 			PostfixTokens = reversedStack;
 
-			// DEBUG
-			//foreach(string tok in PostfixTokens) Console.WriteLine(tok);
 		}
 
 		public MathValue Calculate()
@@ -102,9 +97,7 @@ namespace ComputorV2.Core.Math
 			Stack<string> PostfixStack = new Stack<string>();
 
 			while (reversedStack.Count > 0) PostfixStack.Push(reversedStack.Pop());
-
-			// DEBUG
-			//foreach (string tok in PostfixStack) Console.WriteLine(tok);
+;
 
 			while (PostfixStack.Count > 0)
 			{
@@ -157,6 +150,10 @@ namespace ComputorV2.Core.Math
 					{
 						result = secondValue.Modulo(firstValue);
 					}
+					else if (currentToken == "^")
+					{
+						result = secondValue.Power(int.Parse(firstValue.ToString()!));
+					}
 					else
 						throw new ArgumentException("Postfixer: Unhandled operator in calculation");
 						
@@ -193,7 +190,7 @@ namespace ComputorV2.Core.Math
 
 		public bool IsOperator(string token)
 		{
-			return token.Length == 1 && "-*/+%".Contains(token);
+			return token.Length == 1 && "-*/+%^".Contains(token);
 		}
 
 		public NumberType IsNumeric(string token)
@@ -218,6 +215,7 @@ namespace ComputorV2.Core.Math
 			switch (token)
 			{
 				case "!":
+				case "^":
 					return 4;
 				case "*":
 				case "/":
