@@ -32,9 +32,15 @@ SOURCES     = 	Program.cs							\
 				Core/Lexing/Parser.cs				\
 				Core/Lexing/Tokenizer.cs			\
 				Core/Math/CustomMath.cs				\
+				Core/Math/Grapher.cs				\
 				Core/Math/MathEvaluator.cs			\
+				Core/Math/Postfixer.cs				\
 				Core/Types/MathValue.cs				\
+				Core/Types/ComplexNumber.cs			\
 				Core/Types/RationalNumber.cs		\
+				Core/Types/Function.cs				\
+				Core/Types/Matrix.cs				\
+				Core/Types/Polynomial.cs			\
 				Interactive/HelpSystem.cs			\
 				Interactive/HistoryManager.cs		\
 				Interactive/REPL.cs					\

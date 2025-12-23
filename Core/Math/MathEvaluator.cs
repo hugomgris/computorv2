@@ -72,10 +72,34 @@ namespace ComputorV2.Core.Math
 
 		private string ComputeMatrix(string expression)
 		{
+			// Adding matrix inversion as an afterthought made this function an abomination. I know God is watching me, but right now working > elgant
+			Console.WriteLine($"expr->{expression}");
+			bool isInversionCall = false;
+
+			if (expression.Contains("^-1"))
+				isInversionCall = true;
+
+			string matrixRebuild = expression.Replace("?","").Replace("=","").Replace("^-1", "");
+			matrixRebuild = "[" + matrixRebuild.Replace("\n", ";") + "]";
+
+			if (isInversionCall)
+			{
+				isInversionCall = true;
+				Matrix inv = new Matrix(matrixRebuild);
+				return inv.Inverse().ToString();
+			}
+
+			if (Matrix.TryParse(matrixRebuild, out _))
+				return expression.Replace("?","").Replace("=","");
+		
 			List<string> tokens = _tokenizer.Tokenize(expression.Replace("?","").Replace("=",""));
 			Postfix postfix = new Postfix(tokens);
 
 			var result = (Matrix)postfix.Calculate();
+
+			if (isInversionCall)
+				result = result.Inverse();
+
 			return result.ToString();
 		}
 

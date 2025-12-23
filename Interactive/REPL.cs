@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 
 using ComputorV2.Core.Math;
+using ComputorV2.Core.Types;
 using ComputorV2.Core.Lexing;
 using ComputorV2.IO;
 
@@ -16,7 +17,9 @@ namespace ComputorV2.Interactive
 		private readonly InputHandler	_inputHandler;
 		private readonly MathEvaluator	_mathEvaluator;
 		private readonly HelpSystem		_helpSystem;
-		private bool	_isRunning;
+		private bool					_isRunning;
+		private bool					_graphsOn;
+		Dictionary<string,string>		_commandResults;
 
 		public REPL()
 		{
@@ -29,6 +32,8 @@ namespace ComputorV2.Interactive
 			_mathEvaluator = new MathEvaluator(_parser, _tokenizer);
 			_helpSystem = new HelpSystem();
 			_isRunning = false;
+			_graphsOn = false;
+			_commandResults = new Dictionary<string, string>();
 
 			try
 			{
@@ -80,6 +85,12 @@ namespace ComputorV2.Interactive
 						continue;
 					}
 
+					if (IsListCommandResults(input))
+					{
+						PrintCommandList();
+						continue;
+					}
+
 					if (IsListVariableCommand(input))
 					{
 						_mathEvaluator.PrintVariableList();
@@ -95,6 +106,21 @@ namespace ComputorV2.Interactive
 					if (IsListAllCommand(input))
 					{ 
 						_mathEvaluator.PrintAllLists();
+						PrintCommandList();
+						continue;
+					}
+
+					if (input == "graphs ON")
+					{
+						_graphsOn = true;
+						Console.WriteLine("Function curve display ON");
+						continue;
+					}
+
+					if (input == "graphs OFF")
+					{
+						_graphsOn = false;
+						Console.WriteLine("Function curve display ON");
 						continue;
 					}
 
@@ -108,8 +134,20 @@ namespace ComputorV2.Interactive
 					
 					if (!string.IsNullOrEmpty(result))
 					{
+						if (_parser.DetectInputType(result.Replace(" ", "")) == cmd_type.FUNCTION && _graphsOn)
+						{
+							string[] split = result.Split("=");
+							Polynomial polynomial = new Polynomial(split[split.Length - 1]);
+							Console.WriteLine($"trying to draw ->{polynomial}");
+							Grapher.DrawPolynomialGraph(polynomial);
+						}
+						
 						_displayManager.DisplayResult(result, ConsoleColor.DarkCyan);
+						_commandResults[input] = result;
 					}
+					else
+						_commandResults[input] = "failed/noresult";
+
 				}
 				catch (Exception ex)
 				{
@@ -153,6 +191,17 @@ namespace ComputorV2.Interactive
 			return command == "clearhistory" || command == "clear history" || command == "ch";
 		}
 
+		private bool IsListCommandResults(string input)
+		{
+			if (string.IsNullOrEmpty(input))
+			{
+				return (false);
+			}
+
+			string command = input.Trim().ToLower();
+			return command == "listcommands" || command == "lc";
+		}
+
 		private bool IsListVariableCommand(string input)
 		{
 			if (string.IsNullOrEmpty(input))
@@ -191,6 +240,12 @@ namespace ComputorV2.Interactive
 			string result;
 			string trimmed = input.Trim().Replace(" ", "");
 			
+			if (input.Contains("^-1"))
+			{
+				if (CheckIfInverseInputAppliesToMatrix(input) == false)
+					throw new ArgumentException("Inverse calculation: operation can only be called on Matrix objects");
+			}
+			
 			if (input.Contains('=') && input.Contains('?'))
 				result = _mathEvaluator.Compute(trimmed);
 			else if (input.Contains('='))
@@ -199,6 +254,50 @@ namespace ComputorV2.Interactive
 				result = "";
 				
 			return result;
+		}
+
+		private bool CheckIfInverseInputAppliesToMatrix(string input)
+		{
+			string variable = input.Substring(0, input.IndexOf("^-1"));
+
+			int i = variable.Length - 1;
+			while (i > 0)
+			{
+				if ("+-*/%^".Contains(variable[i]))
+					break;
+				i--;
+			}
+
+			variable = variable.Substring(i);
+			
+			if (_mathEvaluator.Variables.ContainsKey(variable))
+			{
+				string tmp = _mathEvaluator.Variables[variable].ToString()!;
+				string matrixRebuild = "[" + tmp.Replace("\n", ";" + "]");
+				if (Matrix.TryParse(matrixRebuild, out _))
+					return true;
+			}
+
+			if (Matrix.TryParse(variable, out _))
+				return true;
+
+			return false;
+		}
+
+		private void PrintCommandList()
+		{
+			if (_commandResults.Count == 0)
+			{
+				Console.WriteLine("No commands registered");
+				return;
+			}
+
+			Console.WriteLine("Registered commands (c -> r):");
+
+			foreach (var item in _commandResults)
+			{
+				Console.WriteLine("{0} -> {1}", item.Key, item.Value);
+			}
 		}
 
 		public void Stop()
