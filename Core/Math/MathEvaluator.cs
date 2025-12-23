@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.Linq;
 using ComputorV2.Core.Types;
@@ -9,10 +10,10 @@ namespace ComputorV2.Core.Math
 {
 	public class MathEvaluator
 	{
-		private readonly Parser							_parser;
-		private readonly Tokenizer						_tokenizer;
-		private Dictionary<string, MathValue>		_variables = new();
-		//private Dictionary<string, Function>	_functions = new();
+		private readonly Parser					_parser;
+		private readonly Tokenizer				_tokenizer;
+		private Dictionary<string, MathValue>	_variables = new();
+		private Dictionary<string, Function>	_functions = new();
 
 		public MathEvaluator(Parser parser, Tokenizer tokenizer)
 		{
@@ -24,10 +25,11 @@ namespace ComputorV2.Core.Math
 
 		public string Compute(string input)
 		{
+			input = input.Replace(" ", "");
 			string result;
 
-			if (_parser.DetectInputType(input) == cmd_type.FUNCTION) // TODO: input type detection (currently always returning FUNCTION)
-				result = ComputeFunction(input);
+			if (_parser.DetectInputType(input) == cmd_type.FUNCTION)
+				result = ComputeFunction(input, out _);
 			else
 				result = ComputeExpression(input);
 
@@ -40,7 +42,7 @@ namespace ComputorV2.Core.Math
 				expression = SubstituteVariables(expression);
 
 			if (_parser.DetectValueType(expression) == cmd_type.MATRIX)
-				return $"Computing MATRIX variable from {expression} (WIP)";
+				return ComputeMatrix(expression);
 			else if (_parser.DetectValueType(expression) == cmd_type.COMPLEX)
 				return ComputeComplex(expression);
 			else if (_parser.DetectValueType(expression) == cmd_type.RATIONAL)
@@ -49,31 +51,154 @@ namespace ComputorV2.Core.Math
 				return "";
 		}
 
-		private string ComputeRational(string expression)
-		{
-			Postfix postfix = new Postfix(expression.Replace("?", ""));
+		private string ComputeRational(string expression) 
+		{	
+			List<string> tokens = _tokenizer.Tokenize(expression.Replace("?", "").Replace("=", ""));
+			Postfix postfix = new Postfix(tokens);
 
-			RationalNumber value = new RationalNumber(postfix.Calculate());
+			var result = (RationalNumber)postfix.Calculate();
 
-			return value.ToString();
+			return result.ToString();
 		}
 
 		private string ComputeComplex(string expression)
 		{
-			expression = expression.Replace("?", "");
-			expression = expression.Replace("=", "");
-			Console.WriteLine(expression);
-			if (!ComplexNumber.TryParse(expression, out _) || expression.Count(x => x == 'i') > 1)
-				expression = _parser.SimplifyComplexExpression(expression);
-		
-			ComplexNumber value = new ComplexNumber(expression);
+			List<string> tokens = _tokenizer.Tokenize(expression.Replace("?","").Replace("=",""));
+			Postfix postfix = new Postfix(tokens);
 
-			return value.ToString();
+			var result = (ComplexNumber)postfix.Calculate();
+			return result.ToString();
 		}
 
-		private string ComputeFunction(string input)
+		private string ComputeMatrix(string expression)
 		{
-			return $"Computing function (WIP)";
+			List<string> tokens = _tokenizer.Tokenize(expression.Replace("?","").Replace("=",""));
+			Postfix postfix = new Postfix(tokens);
+
+			var result = (Matrix)postfix.Calculate();
+			return result.ToString();
+		}
+
+		public string ComputeFunction(string input, out List<MathValue>? solutions)
+		{
+			if (new[] { "+", "-", "/", "*", "%", "^" }.Any(c => input.Contains(c)))
+			{
+				solutions = null;
+				return ComputeMultipleFunctions(input);
+			}
+			if (input.IndexOf('?') - input.IndexOf('=') == 1)
+			{
+				solutions = null;
+				return SolveFunction(input);
+			}
+
+			string right = input.Substring(input.IndexOf('='), input.IndexOf('?') - input.IndexOf('='));
+			string subRight = "";
+
+			foreach (char c in right)
+			{
+				if (!char.IsDigit(c))
+				{
+					subRight = SubstituteVariables(right);
+					break;
+				}
+			}
+
+			if (!string.IsNullOrWhiteSpace(subRight))
+				input = input.Replace(right, subRight);
+			else
+				subRight = right;
+
+			string left = input.Substring(0, input.IndexOf('('));
+			if (_functions.ContainsKey(left))
+				left = _functions[left].Expression.ToString()!;
+			else
+				throw new ArgumentException("Function Computation: function not defined");
+
+			subRight = subRight.Replace("=", "");
+			string polyString = left!;
+			if (decimal.Parse(subRight) > 0)
+			{
+				polyString = polyString + "-" + subRight;
+			}
+			else
+				polyString = polyString + "+" + subRight;
+
+			
+			Console.WriteLine($"polystring->{polyString}");
+			Polynomial poly = new Polynomial(polyString);
+			Console.WriteLine($"poly->{poly}");
+
+			solutions = poly.Solve();
+			
+			Console.WriteLine($"{solutions.Count} solutions:");
+
+			foreach(MathValue sol in solutions) Console.WriteLine(sol);
+
+			return $"";
+		}
+
+		private string ComputeMultipleFunctions(string input)
+		{
+			string operators = "";
+
+			foreach (char c in input)
+				if ("+-*/^%".Contains(c))
+					operators += c.ToString();
+			
+			string [] functions = input.Split(new Char[] { '+', '-', '*', '/', '%', '^', '=', '?' },
+                                	StringSplitOptions.RemoveEmptyEntries);
+
+			foreach (string function in functions)
+			{
+				input = input.Replace(function, SolveFunction(function));
+			}
+
+			input = input.Replace("?", "").Replace("=", "");
+
+			List<string> tokens = _tokenizer.Tokenize(input);
+			Postfix postfix = new Postfix(tokens);
+
+			return postfix.Calculate().ToString()!;
+		}
+
+		#endregion
+
+		#region Function solve pipeline
+
+		private string SolveFunction(string input)
+		{
+			var parts = input.Split('=');
+			string leftSide = parts[0].Trim();
+
+			string functionName = leftSide.Substring(0, leftSide.IndexOf('('));
+			string variable = leftSide.Substring(leftSide.IndexOf('(') + 1);
+			variable = variable.Trim(')');
+
+			foreach (char c in variable)
+			{
+				if (!char.IsDigit(c) && !_variables.ContainsKey(variable))
+					throw new ArgumentException("Function Solve: variable is undefined");
+			}
+
+			if (!_functions.ContainsKey(functionName))
+				throw new ArgumentException("Function solve: function is not defined");
+
+			if (!decimal.TryParse(variable, out _))
+				variable = _variables[variable].ToString()!;
+			
+			Function function = _functions[functionName];
+			string functionString = function.ToString();
+
+			functionString = functionString.Replace(function.Variable, variable);
+
+			string[] split = functionString.Split('=');
+			
+			List<string> tokens = _tokenizer.Tokenize(split[1]);
+			Postfix postfix = new Postfix(tokens);
+			MathValue result = postfix.Calculate();
+			
+			return result.ToString()!;
 		}
 
 		#endregion
@@ -82,9 +207,11 @@ namespace ComputorV2.Core.Math
 
 		public string Assign(string input)
 		{
+			input = input.Replace(" ", "");
+
 			string result;
 
-			if (_parser.DetectInputType(input) == cmd_type.FUNCTION) // TODO: input type detection (currently always returning FUNCTION)
+			if (_parser.DetectInputType(input) == cmd_type.FUNCTION)
 				result = StoreFunction(input);
 			else
 				result = StoreVariable(input);
@@ -93,7 +220,7 @@ namespace ComputorV2.Core.Math
 		}
 
 		private string StoreVariable(string input)
-		{
+		{		
 			string[] parts = input.Split('=');
 			if (parts.Length != 2)
 				throw new ArgumentException($"RationalNumber: Parser: expression can only contain one '=': {input}", nameof(input));
@@ -105,11 +232,13 @@ namespace ComputorV2.Core.Math
 			else if (_parser.ValidateVariableName(parts[0]) == var_error.NOALPHA)
 				throw new ArgumentException($"Assignation: variable name must contain at least one alphabetical character: {input}", nameof(input));
 			
-			if (HasVariables(parts[1]))
+			if (_parser.DetectInputType(parts[1]) == cmd_type.FUNCTION)
+				parts[1] = SolveFunction(parts[1]);
+			else if (HasVariables(parts[1]))
 				parts[1] = SubstituteVariables(parts[1]);
 
 			if (_parser.DetectValueType(parts[1]) == cmd_type.MATRIX)
-				return $"Storing MATRIX variable from {input}";
+				return StoreMatrix(parts);
 			else if (_parser.DetectValueType(parts[1]) == cmd_type.COMPLEX)
 				return StoreComplex(parts);
 			else if (_parser.DetectValueType(parts[1]) == cmd_type.RATIONAL)
@@ -122,39 +251,60 @@ namespace ComputorV2.Core.Math
 		{			
 			string name = parts[0];
 
-			Postfix postfix = new Postfix(parts[1]);
+			List<string> tokens = _tokenizer.Tokenize(parts[1].Replace("?", "").Replace("=", ""));
+			Postfix postfix = new Postfix(tokens);
+			var result = (RationalNumber)postfix.Calculate();
 
-			RationalNumber value = new RationalNumber(postfix.Calculate());
+			_variables[name] = result;
 
-			_variables[name] = value;
-
-			return value.ToString();
+			return result.ToString();
 		}
 
 		private string StoreComplex(string[] parts)
 		{
 			string name = parts[0];
-			
-			if (!ComplexNumber.TryParse(parts[1], out _) || parts[1].Count(x => x == 'i') > 1)
-				parts[1] = _parser.SimplifyComplexExpression(parts[1]);
 		
-			ComplexNumber value = new ComplexNumber(parts[1]);
+			List<string> tokens = _tokenizer.Tokenize(parts[1].Replace("?", "").Replace("=", ""));
+			Postfix postfix = new Postfix(tokens);
+			var result = (ComplexNumber)postfix.Calculate();
 
-			// Not sure if this is correct, but if a complex number has no imaginary part, I store it as a Rational
-			if (value.IsReal)
-			{
-				RationalNumber valueRational = new RationalNumber(value.Real);
-				_variables[name] = valueRational;
-			}
-			else
-				_variables[name] = value;
+			_variables[name] = result;
 
-			return value.ToString();
+			return result.ToString();
+		}
+
+		private string StoreMatrix(string[] parts)
+		{
+			string name = parts[0];
+
+			List<string> tokens = _tokenizer.Tokenize(parts[1].Replace("?", "").Replace("=", ""));
+			Postfix postfix = new Postfix(tokens);
+			var result = (Matrix)postfix.Calculate();
+			
+			_variables[name] = result;
+
+			return result.ToString();
 		}
 
 		private string StoreFunction(string input)
 		{
-			return $"Storing function from {input}";
+			var parts = input.Split('=');
+			string leftSide = parts[0].Trim();
+
+			var match = System.Text.RegularExpressions.Regex.Match(leftSide, @"^([a-zA-Z][a-zA-Z0-9_]*)\s*\(\s*([a-zA-Z][a-zA-Z0-9_]*)\s*\)$");
+			if (!match.Success)
+				throw new ArgumentException($"Parsing: Invalid function definition: {leftSide}");
+
+			string functionName = match.Groups[1].Value;
+			string variable = match.Groups[2].Value;
+
+			string resolvedExpression = ResolveFunctionVariables(parts[1].Trim(), variable);
+			Polynomial poly = new Polynomial(resolvedExpression);
+
+			var function = new Function(functionName, variable, poly);
+			_functions[functionName] = function;
+
+			return function.ToString();
 		}
 
 		#endregion
@@ -176,13 +326,27 @@ namespace ComputorV2.Core.Math
 		{
 			StringBuilder sb = new StringBuilder();
 
-			foreach (char c in expression)
+			for (int i = 0; i < expression.Length; i++)
 			{
-				if (Char.IsLetter(c) && c != 'i')
+				if (Char.IsLetter(expression[i]) && expression[i] != 'i')
 				{
-					if (_variables.ContainsKey(c.ToString()))
+					string var = expression[i].ToString();
+					if (i < expression.Length)
 					{
-						sb.Append(_variables[c.ToString()]);
+						for (int j = i + 1; j < expression.Length; j++)
+						{
+							if (Char.IsLetterOrDigit(expression[j]) && expression[j] != 'i')
+								var += expression[j].ToString();
+							else
+								break;							
+						}
+					}
+
+					i += var.Length - 1;
+					
+					if (_variables.ContainsKey(var))
+					{
+						sb.Append(_variables[var]);
 					}
 					else
 					{
@@ -191,7 +355,51 @@ namespace ComputorV2.Core.Math
 				}
 				else
 				{
-					sb.Append(c);
+					sb.Append(expression[i]);
+				}
+			}
+
+			return sb.ToString();
+		}
+
+		private string ResolveFunctionVariables(string expression, string excludedVariable)
+		{
+			StringBuilder sb = new StringBuilder();
+
+			for (int i = 0; i < expression.Length; i++)
+			{
+				if (Char.IsLetter(expression[i]) && expression[i] != 'i')
+				{
+					string var = expression[i].ToString();
+					if (i < expression.Length)
+					{
+						for (int j = i + 1; j < expression.Length; j++)
+						{
+							if (Char.IsLetterOrDigit(expression[j]) && expression[j] != 'i')
+								var += expression[j].ToString();
+							else
+								break;							
+						}
+					}
+
+					i += var.Length - 1;
+					
+					if (var == excludedVariable)
+					{
+						sb.Append(var);
+					}
+					else if (_variables.ContainsKey(var))
+					{
+						sb.Append(_variables[var]);
+					}
+					else
+					{
+						throw new ArgumentException($"Variable Substitution: expression contains undefined variables: {expression}", nameof(expression));
+					}
+				}
+				else
+				{
+					sb.Append(expression[i]);
 				}
 			}
 
@@ -219,9 +427,7 @@ namespace ComputorV2.Core.Math
 
 		public void PrintFunctionList()
 		{
-			Console.WriteLine("Function list printing is WIP!");
-			// TODO: pending function implementation
-			/* if (_functions.Count == 0)
+			if (_functions.Count == 0)
 			{
 				Console.WriteLine("No functions defined!");
 				return;
@@ -230,8 +436,8 @@ namespace ComputorV2.Core.Math
 			Console.WriteLine("Defined functions:");
 			foreach (var item in _functions)
 			{
-				Console.WriteLine("{0} = {1}", item.Key, item.Value);
-			} */
+				Console.WriteLine(item.Value);
+			}
 		}
 
 		public void PrintAllLists()
@@ -245,6 +451,7 @@ namespace ComputorV2.Core.Math
 		#region Testing stuff
 
 		public Dictionary<string, MathValue> Variables => _variables;
+		public Dictionary<string, Function> Functions => _functions;
 
 		#endregion
 	}

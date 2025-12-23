@@ -21,7 +21,7 @@ namespace ComputorV2.Core.Types
 		public abstract override string ToString(); */
 
 		public virtual RationalNumber? AsRational() => null;
-		//public virtual ComplexNumber? AsComplex() => null;
+		public virtual ComplexNumber? AsComplex() => null;
 
 		public static MathValue operator +(MathValue a, MathValue b) => a.Add(b);
 		public static MathValue operator -(MathValue a, MathValue b) => a.Subtract(b);

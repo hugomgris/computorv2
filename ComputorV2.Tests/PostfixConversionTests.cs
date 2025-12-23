@@ -15,31 +15,36 @@ namespace ComputorV2.Tests
 		[Fact]
 		public void Postfix_BasicConversionTests_RationalNumbers()
 		{
-			Postfix postfix_1 = new Postfix("2 + 3 * 4");
+			Tokenizer tokenizer = new Tokenizer();
+
+			List<string> tokens = tokenizer.Tokenize("2 + 3 * 4");
+			Postfix postfix_1 = new Postfix(tokens);
 			string pTokens_1 = String.Join("", postfix_1.PostfixTokens);
 			Assert.Equal("234*+", pTokens_1);
 			
-			Postfix postfix_2 = new Postfix("(2 + 5 - 1) * 5 /6 * (8 * 9 - 4)");
+			tokens = tokenizer.Tokenize("(2 + 5 - 1) * 5 /6 * (8 * 9 - 4)");
+			Postfix postfix_2 = new Postfix(tokens);
 			string pTokens_2 = String.Join("", postfix_2.PostfixTokens);
 			Assert.Equal("25+1-5*6/89*4-*", pTokens_2);
 
-			Postfix postfix_3 = new Postfix("8 % 2");
+			tokens = tokenizer.Tokenize("(2 + 5 - 1) * 5 /6 * (8 * 9 - 4) + 2");
+			Postfix postfix_3 = new Postfix(tokens);
 			string pTokens_3 = String.Join("", postfix_3.PostfixTokens);
-			Assert.Equal("82%", pTokens_3);
+			Assert.Equal("25+1-5*6/89*4-*2+", pTokens_3);
 
-			RationalNumber sol_3 = new RationalNumber(postfix_3.Calculate());
-			Assert.Equal(RationalNumber.Zero, sol_3);
+			RationalNumber sol_3 = (RationalNumber)postfix_3.Calculate();
+			Assert.Equal(342, sol_3);
 		}
 
 		[Fact]
-		public void Postfix_LongConversionTests_RationalNumbers()
+		public void Postfix_LongConversionTests_ComplexNumbers()
 		{
-			Postfix postfix_1 = new Postfix("(2 + 5 - 1) * 5 + 6 % (8 * 9 - 4)");
-			string pTokens_1 = String.Join("", postfix_1.PostfixTokens);
-			Assert.Equal("25+1-5*689*4-%+", pTokens_1);
+			Tokenizer tokenizer = new Tokenizer();
+			List<string> tokens = tokenizer.Tokenize("150 + 89i -8i +(8 * 800i) + 90i");
+			Postfix postfix_1 = new Postfix(tokens);
 
-			RationalNumber sol_1 = new RationalNumber(postfix_1.Calculate());
-			Assert.Equal(new RationalNumber(36), sol_1);
+			ComplexNumber sol_1 = (ComplexNumber)postfix_1.Calculate();
+			Assert.Equal(new ComplexNumber(150, 6571), sol_1);
 		}
 	}
 }

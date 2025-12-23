@@ -3,263 +3,45 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 
-// Found this infix to postfix code in stackoverflow (credit: Sean (users/214980/sean)). Didn't want to write it myself, life is already miserable as it is.
-// https://stackoverflow.com/questions/1438030/infix-to-postfix-converter
-//
-// Tweaks:
-//	-Made a couple of edits to avoid compilation warnings (null values)
-//	-Tokenization now handles expressions starting with negative numbers
-//	-Expanded the Calculate() function to manage the Modulo operator (%), was throwing an error.
-
+using ComputorV2.Core.Types;
 
 namespace ComputorV2.Core.Math
-{
-    #region enums
-    enum TokenTypes
+{	
+	public class Postfix
     {
-        Operator,
-        Number,
-        Parenthesis
-    }
-    enum Associativenesses
-    {
-        Left,
-        Right
-    }
-    enum OperatorTypes { Plus, Minus, Multiply, Divide, Equals, Exclamation, Modulus }
-    enum ParenthesisTypes { Open, Close }
-    #endregion
+		public Stack<string> InfixTokens { get; set; }
+		public Stack<string> PostfixTokens { get; set; }
 
-    #region classes
-    public class Token { }
-
-    class Operator : Token
-    {
-        public OperatorTypes OperatorType { get; set; }
-
-        public Operator(OperatorTypes operatorType) { OperatorType = operatorType; }
-
-        public int Precedence
-        {
-			get
-			{
-				switch (this.OperatorType)
-				{
-					case OperatorTypes.Exclamation:
-						return 4;
-					case OperatorTypes.Multiply:
-					case OperatorTypes.Divide:
-					case OperatorTypes.Modulus:
-						return 3;
-					case OperatorTypes.Plus:
-					case OperatorTypes.Minus:
-						return 2;
-					case OperatorTypes.Equals:
-						return 1;
-					default:
-						throw new Exception("Invalid Operator Type for Precedence get");
-				}
-			}
-		}
-
-		public Associativenesses Associativeness
+		public Postfix(List<string> rawTokens)
 		{
-			get
+			PostfixTokens = new Stack<string>();
+
+			// 1. Tokens -> Infix Stack
+			InfixTokens = new Stack<string>(rawTokens);
+
+			// 2. Build the Postfix stack
+			// 2.1 Reverse the Infix Stack
+			Stack<string> InfixStack = new Stack<string>(InfixTokens);
+
+			// 2.2 New stacks for postfix management
+			Stack<string> output = new Stack<string>();
+			Stack<string> operators = new Stack<string>();
+
+			// 2.3 Postfix building pipeline (Shunting yard -> RPN)
+
+			while (InfixStack.Count > 0)
 			{
-				switch (this.OperatorType)
+				string currentToken = InfixStack.Pop();
+
+				if (IsOperator(currentToken))
 				{
-					case OperatorTypes.Equals:
-					case OperatorTypes.Exclamation:
-				return Associativenesses.Right;
-					case OperatorTypes.Plus:
-					case OperatorTypes.Minus:
-					case OperatorTypes.Multiply:
-					case OperatorTypes.Divide:
-					case OperatorTypes.Modulus:
-				return Associativenesses.Left;
-					default:
-				throw new Exception("Invalid Operator Type for Associativeness get");
-				}
-			}
-        }
-
-        public override string? ToString()
-        {
-			switch (OperatorType)
-			{
-				case OperatorTypes.Plus: return "+";
-				case OperatorTypes.Minus: return "-";
-				case OperatorTypes.Multiply: return "*";
-				case OperatorTypes.Divide: return "/";
-				case OperatorTypes.Equals: return "=";
-				case OperatorTypes.Exclamation: return "!";
-				case OperatorTypes.Modulus: return "%";
-				default: return null;
-			}
-        }
-
-        public static OperatorTypes? GetOperatorType(string operatorValue)
-        {
-			switch (operatorValue)
-			{
-				case "+": return OperatorTypes.Plus;
-				case "-": return OperatorTypes.Minus;
-				case "*": return OperatorTypes.Multiply;
-				case "/": return OperatorTypes.Divide;
-				case "=": return OperatorTypes.Equals;
-				case "!": return OperatorTypes.Exclamation;
-				case "%": return OperatorTypes.Modulus;
-				default: return null;
-			}
-        }
-    }
-
-    class Parenthesis : Token
-    {
-        public ParenthesisTypes ParenthesisType { get; set; }
-
-        public Parenthesis(ParenthesisTypes parenthesisType) { ParenthesisType = parenthesisType; }
-
-        public override string ToString() { if (ParenthesisType == ParenthesisTypes.Open) return "("; else return ")"; }
-
-        public static ParenthesisTypes? GetParenthesisType(string parenthesisValue)
-        {
-			switch (parenthesisValue)
-			{
-				case "(": return ParenthesisTypes.Open;
-				case ")": return ParenthesisTypes.Close;
-				default: return null;
-			}
-        }
-    }
-
-    class Numeric : Token
-    {
-        public decimal Value { get; set; }
-
-        public Numeric(decimal value) { Value = value; }
-
-        public override string ToString() { return Value.ToString(); }
-    }
-
-    public class Postfix
-    {
-        public Stack<Token> InfixTokens { get; set; }
-
-        public Stack<Token> PostfixTokens { get; set; }
-
-        public string RawFormula { get; set; }
-
-
-        public Postfix(string rawFormula)
-        {
-			// store the raw formula
-			RawFormula = rawFormula;
-			InfixTokens = new Stack<Token>();
-			PostfixTokens = new Stack<Token>();
-
-			#region generate the InFix Stack
-			Stack<Token> tokens = new Stack<Token>();
-			string store = "";
-
-			int startsWithMinus = 0;
-			if (rawFormula[0] == '-')
-				startsWithMinus = 1;
-
-			// parse the formula into a stack of tokens
-			while (rawFormula.Length > 0)
-			{
-				if (startsWithMinus > 0)
-				{
-					int j = 1;
-					while (j < rawFormula.Length && Char.IsNumber(rawFormula[j])) j++;
-
-					store = rawFormula.Substring(0, j);
-					tokens.Push(new Numeric(Convert.ToDecimal(store)));
-
-					store = "";
-					startsWithMinus = 0;
-					rawFormula = rawFormula.Substring(j);
-					continue;
-				}
-				
-				string ThisChar = rawFormula.Substring(0, 1);
-
-				if (Regex.IsMatch(ThisChar, "[0-9\\.]"))
-				{
-					// a numeric char, so store it until the number is reached
-					store += ThisChar;
-
-				}
-				else if (Operator.GetOperatorType(ThisChar) != null)
-				{
-					// a value is stored, so add it to the stack before processing the operator
-					if (store != "")
+					while (operators.Count > 0 && IsOperator(operators.Peek()))
 					{
-						tokens.Push(new Numeric(Convert.ToDecimal(store)));
-						store = "";
-					}
-					tokens.Push(new Operator((OperatorTypes)Operator.GetOperatorType(ThisChar)!));
-				}
-				else if (Parenthesis.GetParenthesisType(ThisChar)!=null)
-				{
-					// a value is stored, so add it to the stack before processing the parenthesis
-					if (store != "")
-					{
-						tokens.Push(new Numeric(Convert.ToDecimal(store)));
-						store = "";
-					}
-					tokens.Push(new Parenthesis((ParenthesisTypes)Parenthesis.GetParenthesisType(ThisChar)!));
-				}
-				else
-				{
-					// ignore blanks (unless between to numbers)
-					if (!(ThisChar == " " && !(store != "" && Regex.IsMatch(rawFormula.Substring(1, 1), "[0-9\\.]"))))
-					{
-						throw new Exception("Invalid character in Formula: " + ThisChar);
-					}
-				}
-				// move to the next position
-				rawFormula = rawFormula.Substring(1);
-			}
+						string currentOperator = currentToken;
+						string nextOperator = operators.Peek();
 
-			// if there is still something in the numeric store, add it to the stack
-			if (store != "")
-			{
-				tokens.Push(new Numeric(Convert.ToDecimal(store)));
-			}
-
-			// reverse the stack
-			Stack<Token> reversedStack = new Stack<Token>();
-			while (tokens.Count > 0) reversedStack.Push(tokens.Pop());
-
-			// store in the Tokens property
-			InfixTokens = reversedStack;
-			#endregion
-
-			#region generate the PostFix Stack
-			// get a reversed copy of the tokens
-			Stack<Token> infixTokens = new Stack<Token>(InfixTokens);
-			Stack<Token> InFixStack = new Stack<Token>();
-			while (infixTokens.Count > 0) InFixStack.Push(infixTokens.Pop());
-			// new stacks
-			Stack<Token> output = new Stack<Token>();
-			Stack<Token> operators = new Stack<Token>();
-
-			while (InFixStack.Count > 0)
-			{
-				Token currentToken = InFixStack.Pop();
-
-				// if it's an operator
-				if (currentToken.GetType() == typeof(Operator))
-				{
-					// move precedent operators to output
-					while (operators.Count > 0 && operators.Peek().GetType() == typeof(Operator))
-					{
-						Operator currentOperator = (Operator)currentToken;
-						Operator nextOperator = (Operator)operators.Peek();
-						if ((currentOperator.Associativeness == Associativenesses.Left && currentOperator.Precedence <= nextOperator.Precedence)
-							|| (currentOperator.Associativeness == Associativenesses.Right && currentOperator.Precedence < nextOperator.Precedence))
+						if ((GetAssociativeness(currentOperator) == Associativenesses.Left && GetPrecedence(currentOperator) <= GetPrecedence(nextOperator))
+							|| (GetAssociativeness(currentOperator) == Associativenesses.Right && GetPrecedence(currentOperator) < GetPrecedence(nextOperator)))
 						{
 							output.Push(operators.Pop());
 						}
@@ -267,125 +49,239 @@ namespace ComputorV2.Core.Math
 						{
 							break;
 						}
-							}
-							// add to operators
-							operators.Push(currentToken);
-						}
-						// if it's a bracket
-						else if (currentToken.GetType() == typeof(Parenthesis))
-						{
-							switch (((Parenthesis)currentToken).ParenthesisType)
-							{
-						// if it's an opening bracket, add it to operators
+					}
+					operators.Push(currentToken);
+				}
+				else if (IsParenthesis(currentToken))
+				{
+					switch (GetParenthesisType(currentToken))
+					{
 						case ParenthesisTypes.Open:
 							operators.Push(currentToken);
 							break;
-						// if it's a closing bracket
 						case ParenthesisTypes.Close:
-							// shift operators in between opening to output 
 							while (operators.Count > 0)
 							{
-								Token nextOperator = operators.Peek();
-								if (nextOperator.GetType() == typeof(Parenthesis) && ((Parenthesis)nextOperator).ParenthesisType == ParenthesisTypes.Open) break;
+								string nextOperator = operators.Peek();
+								if (IsParenthesis(nextOperator) && GetParenthesisType(nextOperator) == ParenthesisTypes.Open)
+									break;
 								output.Push(operators.Pop());
 							}
-							// add to operators
 							operators.Pop();
 							break;
 					}
 				}
-				// if it's numeric, add to output
-				else if (currentToken.GetType() == typeof(Numeric))
+				else if (IsNumeric(currentToken) != NumberType.NoNumber)
 				{
 					output.Push(currentToken);
 				}
-
 			}
 
-			// for all remaining operators, move to output
 			while (operators.Count > 0)
 			{
 				output.Push(operators.Pop());
 			}
 
-			// reverse the stack
-			reversedStack = new Stack<Token>();
+			Stack<string> reversedStack = new Stack<string>();
 			while (output.Count > 0) reversedStack.Push(output.Pop());
 
-			// store in the Tokens property
 			PostfixTokens = reversedStack;
-			#endregion
-        }
 
-        public decimal Calculate()
-        {
-			Stack<Numeric> EvaluationStack = new Stack<Numeric>();
-			// get a reversed copy of the tokens
-			Stack<Token> postFixStack = new Stack<Token>(PostfixTokens);
-			Stack<Token> PostFixStack = new Stack<Token>();
+		}
 
-			while (postFixStack.Count > 0) PostFixStack.Push(postFixStack.Pop());
+		public MathValue Calculate()
+		{
+			Stack<MathValue> EvaluationStack = new Stack<MathValue>();
 
-			while (PostFixStack.Count > 0)
+			Stack<string> reversedStack = new Stack<string>(PostfixTokens);
+			Stack<string> PostfixStack = new Stack<string>();
+
+			while (reversedStack.Count > 0) PostfixStack.Push(reversedStack.Pop());
+;
+
+			while (PostfixStack.Count > 0)
 			{
-				Token currentToken = PostFixStack.Pop();
-
-				if (currentToken.GetType() == typeof(Numeric))
+				string currentToken = PostfixStack.Pop();
+				
+				if (IsNumeric(currentToken) != NumberType.NoNumber)
 				{
-					EvaluationStack.Push((Numeric)currentToken);
-				}
-				else if (currentToken.GetType() == typeof(Operator))
-				{
-					Operator currentOperator = (Operator)currentToken;
-					if (currentOperator.OperatorType == OperatorTypes.Plus ||
-						currentOperator.OperatorType == OperatorTypes.Minus ||
-						currentOperator.OperatorType == OperatorTypes.Multiply ||
-						currentOperator.OperatorType == OperatorTypes.Divide ||
-						currentOperator.OperatorType == OperatorTypes.Modulus)
+					if (ComplexNumber.TryParse(currentToken, out _))
 					{
-						decimal FirstValue = EvaluationStack.Pop().Value;
-						decimal SecondValue = EvaluationStack.Pop().Value;
-						decimal Result;
-
-						if (currentOperator.OperatorType == OperatorTypes.Plus)
-						{
-							Result = SecondValue + FirstValue;
-						}
-						else if (currentOperator.OperatorType == OperatorTypes.Minus)
-						{
-							Result = SecondValue - FirstValue;
-						}
-						else if (currentOperator.OperatorType == OperatorTypes.Divide)
-						{
-							Result = SecondValue / FirstValue;
-						}
-						else if (currentOperator.OperatorType == OperatorTypes.Multiply)
-						{
-							Result = SecondValue * FirstValue;
-						}
-						else if (currentOperator.OperatorType == OperatorTypes.Modulus)
-						{
-							Result = SecondValue % FirstValue;
-						}
-						else
-						{
-							throw new Exception("Unhandled operator in Formula.Calculate()");
-						}
-						EvaluationStack.Push(new Numeric(Result));
+						ComplexNumber cn = new ComplexNumber(currentToken);
+						EvaluationStack.Push(cn);
 					}
+					else if (RationalNumber.TryParse(currentToken, out _))
+					{
+						RationalNumber rn = new RationalNumber(currentToken);
+						EvaluationStack.Push(rn);
+					}
+					else if (Matrix.TryParse(currentToken, out _))
+					{
+						Matrix m = new Matrix(currentToken);
+						EvaluationStack.Push(m);
+					}
+					else
+						throw new ArgumentException("Postfix Calculation: error while managing number token");
+				}
+				else if (IsOperator(currentToken))
+				{
+					MathValue firstValue = EvaluationStack.Pop();
+					MathValue secondValue = EvaluationStack.Pop();
+
+					MathValue result;
+
+					if (currentToken == "+")
+					{
+						result = secondValue.Add(firstValue);
+					}
+					else if (currentToken == "-")
+					{
+						result = secondValue.Subtract(firstValue);
+					}
+					else if (currentToken == "*")
+					{
+						result = secondValue.Multiply(firstValue);
+					}
+					else if (currentToken == "/")
+					{
+						result = secondValue.Divide(firstValue);
+					}
+					else if (currentToken == "%")
+					{
+						result = secondValue.Modulo(firstValue);
+					}
+					else if (currentToken == "^")
+					{
+						result = secondValue.Power(int.Parse(firstValue.ToString()!));
+					}
+					else
+						throw new ArgumentException("Postfixer: Unhandled operator in calculation");
+						
+					EvaluationStack.Push(result);
 				}
 				else
-				{
-					throw new Exception("Unexpected Token type in Formula.Calculate");
-				}
+						throw new ArgumentException($"Postfixer: Unexpected Token type in calculation {currentToken}");
 			}
 
-			if (EvaluationStack.Count != 1)
+			return EvaluationStack.Peek();
+		}
+
+		#region Helpers
+
+		public enum Associativenesses
+		{
+			Left,
+			Right
+		}
+
+		public enum ParenthesisTypes
+		{
+			Open,
+			Close
+		}
+
+		public enum NumberType
+		{
+			Rational,
+			Complex,
+			Matrix,
+			NoNumber
+		}
+
+		public bool IsOperator(string token)
+		{
+			return token.Length == 1 && "-*/+%^".Contains(token);
+		}
+
+		public NumberType IsNumeric(string token)
+		{
+			
+			if (ComplexNumber.TryParse(token, out _))
+				return NumberType.Complex;
+			else if (RationalNumber.TryParse(token, out _))
+				return NumberType.Rational;
+			else if (Matrix.TryParse(token, out _))
+				return NumberType.Matrix;
+			return NumberType.NoNumber;
+		}
+
+		public bool IsParenthesis(string token)
+		{
+			return token == "(" || token == ")";
+		}
+
+		public int GetPrecedence(string token)
+		{
+			switch (token)
 			{
-				throw new Exception("Unexpected number of Tokens in Formula.Calculate");
+				case "!":
+				case "^":
+					return 4;
+				case "*":
+				case "/":
+				case "%":
+					return 3;
+				case "+":
+				case "-":
+					return 2;
+				case "=":
+					return 1;
+				default:
+					throw new Exception("Postfixer: Invalid Operator Type for Precedence get");
 			}
-			return EvaluationStack.Peek().Value;
-        }
-    }
-    #endregion
+		}
+
+		public Associativenesses GetAssociativeness(string token)
+		{
+			switch (token)
+			{
+				case "=":
+				case "!":
+					return Associativenesses.Right;
+				case "+":
+				case "-":
+				case "*":
+				case "/":
+				case "%":
+					return Associativenesses.Left;
+				default:
+					throw new Exception("Postfixer: Invalid Operator Type for Associativeness get");
+			}
+		}
+
+		public ParenthesisTypes GetParenthesisType(string token)
+		{
+			if (token == "(") return ParenthesisTypes.Open;
+			return ParenthesisTypes.Close;
+		}
+
+		public MathValue MakeOperation(MathValue firstValue, MathValue secondValue, string op)
+		{
+			if (op == "+")
+			{
+				return firstValue.Add(secondValue);
+			}
+			else if (op == "-")
+			{
+				return firstValue.Subtract(secondValue);
+			}
+			else if (op == "*")
+			{
+				return firstValue.Multiply(secondValue);
+			}
+			else if (op == "/")
+			{
+				return firstValue.Divide(secondValue);
+			}
+			else if (op == "%")
+			{
+				return firstValue.Modulo(secondValue);
+			}
+			else
+				throw new ArgumentException("Postfixer: Unhandled operator in calculation");
+		}
+
+		#endregion
+	}
+
 }

@@ -1,3 +1,6 @@
+using System;
+using System.Collections;
+
 using ComputorV2.Core.Math;
 using ComputorV2.Core.Lexing;
 using ComputorV2.IO;
@@ -90,7 +93,7 @@ namespace ComputorV2.Interactive
 					}
 
 					if (IsListAllCommand(input))
-					{
+					{ 
 						_mathEvaluator.PrintAllLists();
 						continue;
 					}
@@ -99,7 +102,7 @@ namespace ComputorV2.Interactive
 					{
 						continue;
 					}
-
+					
 					string result = ProcessCommand(input);
 					_historyManager.AddCommand(input);
 					
@@ -194,18 +197,7 @@ namespace ComputorV2.Interactive
 				result = _mathEvaluator.Assign(trimmed);
 			else
 				result = "";
-			/* cmd_type type = _parser.DetectInputType(input);
-			switch (type)
-			{
-				case cmd_type.FUNCTION:
-					return ($"{input} is of type FUNCTION");
-
-				case cmd_type.RATIONAL:
-					return ($"{input} is of type RATIONAL");
-
-				default:
-					return($"{input} is of UNKNOWN type");
-			} */
+				
 			return result;
 		}
 
