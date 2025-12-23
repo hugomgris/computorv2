@@ -1,17 +1,62 @@
 
 [COMPUTOR HELP]
 
-This is a test. 
+ComputorV2 is a complex calculator that handles computation for Rational Numbers, Complex Numbers, Matrices and Functions (polynomials). It has a persisten History that loads upon initialization and to which any successful executed command is saved upon program exit.
 
-If you want to compute, input must end in '=?'
-	[EX] a + b =?
+As any other CLI based program, ComputorV2 can be navigated with arrow keys. Left and Right arrow keys move the cursor, and Up and Down arrows navigate the History.
 
---VARIABLES
+There are two main uses: Assignation and Computation.
 
-Variable declaration follows the syntax VAR=VALUE.
+--Assignation
 
-Variable names can only contain alphanumeric characters and must contain at least one alphabetic character.
-	[EX] var1 = 42 ✔
-	[EX] VAR42 = 0.4242 ✔
-	[EX] a = b + c ✔
-	[EX] 42 = 4 + 2i ✖
+	-For Assignation calls, input command must contain a middle '=' token. Note that any variable name containing a 'i' char will be rejected, as 'i' is reserved for Complex Number handling and representation.
+
+		[EX] varA = 20
+		[EX] varC = -4 - 10i
+		[EX] varD = [[1,2];[3,4]]
+		[EX] fun(x) = x^2 + 2x + 1
+
+	-Assignation can be processed through computation, assigning variable values to the result of an expression. This expression can also contain variables itself, but if any sent variable is not previously stored, input will be rejected:
+
+		[EX] varA = 1 + 6
+		[EX] varB = varA % 2
+		[EX] varC = [[1,2];[3,4]]
+		[EX] varD = varC - [[4,3];[2,1]]
+		[EX] varE = 150 + 89i -8i +(8 * 800i)
+
+--Computation
+
+	-For Computation calls, input must contain both a '=' and a '?' token. Computation can be requested for both direc input values and stored variables. Note that a Computation call for a single stored variable will result in a recovery of said variable's value:
+
+		[EX] 10 + 20 = ?
+		[EX] varA * 2 = ? (with previously stored varA)
+		[EX] fun1(78) = ? (with previously stored fun1)
+		[EX] fun2(varB) = ? (with previously stored fun2 and varB)
+		
+	-Computation calls can also be used to resolve polynomials, both as direct input and as stored functions. Variable names for functions accept any length and alphanumeric combinations:
+		[EX] fun1(abc) = abc^2 + bc + 1
+		[EX] fun1(3) = 0 ?
+		[EX] varA = 5
+		[EX] varB = 4
+		[EX] fun1(varA) = varB ?
+
+--Special features
+
+	-There are builtin commands for special feature calls:
+		
+		"clearhistory" | "ch" -> clears all stored commands stored in history.
+		"listvariables" | "lv -> prints a list of stored variables.
+		"listfunctions" | "lf" -> prints a list of stored functions.
+		"listcommands" | "lc" -> prints a list of sent commands and their results.
+		"listall" | "la" -> prints a combination of "lv", "lf" and "lc".
+		"graphs ON" -> sets the graphical representation of stored functions ON.
+		"graphs OFF" -> sets the graphical representation of stored functions OFF.
+		"help" -> prints this help information.
+
+	-There are some special computation calls available for Matrices:
+		
+		-||A||1 = ? -> Computes the Norm1 (Manhattan) of any pre-stored Matrix.
+		-A^-1=? -> Computes the inverse of a matrix, which can be pre-stored or sent as literal.
+
+Have fun <3
+

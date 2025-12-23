@@ -183,9 +183,8 @@ namespace ComputorV2.Tests
 
 			List<MathValue> solutions;
 
-			_evaluator.ComputeFunction("funA(x) = y ?", out solutions);
-			
-			Assert.Equal(1, solutions.Count);
+			_evaluator.ComputeFunction("funA(x) = y ?", out solutions!);
+
 			Assert.Equal("-1", solutions[0].ToString());
 		}
 

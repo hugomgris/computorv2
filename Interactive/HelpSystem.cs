@@ -7,12 +7,7 @@ namespace ComputorV2.Interactive
 		public void Help()
 		{
 			foreach (var line in _helpLines!)
-			{
-				// Not trimming because file contains empty lines for formatting. TODO: research if there's better ways to build this help pipeline.
-				/* var trimmed = line.Trim();
-				if (!string.IsNullOrEmpty(trimmed))
-					Console.WriteLine(line); */
-				
+			{			
 				Console.WriteLine(line);
 			}
 		}
