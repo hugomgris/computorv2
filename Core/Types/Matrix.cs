@@ -222,7 +222,13 @@ namespace ComputorV2.Core.Types
 		public override MathValue Multiply(MathValue other)
 		{
 			if (other is not Matrix otherMatrix)
+			{
+				if (other.GetType() == typeof(RationalNumber) || other.GetType() == typeof(ComplexNumber))
+				{
+					return Scalar(other);
+				}
 				throw new ArgumentException("Matrix multiplication requires another matrix");
+			}
 
 			return Multiply(otherMatrix);
 		}
@@ -245,6 +251,20 @@ namespace ComputorV2.Core.Types
 					}
 
 					result[i,j] = sum;
+				}
+			}
+
+			return result;
+		}
+
+		public Matrix Scalar(MathValue other)
+		{
+			var result = new Matrix(_rows, _cols);
+			for (int i = 0; i < result.Rows; i++)
+			{
+				for (int j = 0; j < result.Cols; j++)
+				{
+					result[i,j] = _elements[i,j] * other;
 				}
 			}
 

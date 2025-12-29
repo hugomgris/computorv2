@@ -142,6 +142,7 @@ namespace ComputorV2.Core.Math
 					}
 					else if (currentToken == "*")
 					{
+						Console.WriteLine($"attempting to multiply {secondValue} * {firstValue}");
 						result = secondValue.Multiply(firstValue);
 					}
 					else if (currentToken == "/")

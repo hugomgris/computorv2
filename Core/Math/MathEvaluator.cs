@@ -260,8 +260,6 @@ namespace ComputorV2.Core.Math
 			else if (HasVariables(parts[1]))
 				parts[1] = SubstituteVariables(parts[1]);
 
-			foreach(string part in parts) Console.WriteLine($"part->{part}");
-
 			if (_parser.DetectValueType(parts[1]) == cmd_type.MATRIX)
 				return StoreMatrix(parts);
 			else if (_parser.DetectValueType(parts[1]) == cmd_type.COMPLEX)
