@@ -294,6 +294,7 @@ namespace ComputorV2.Core.Types
 				return _numerator.ToString();
 			
 			return $"{_numerator}/{_denominator}";
+			//return $"{(decimal)_numerator/(decimal)_denominator}"; // for decimal returns
 		}
 
 		public string ToDecimalString()
