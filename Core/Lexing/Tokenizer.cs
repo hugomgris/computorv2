@@ -61,6 +61,15 @@ namespace ComputorV2.Core.Lexing
 				}
 				else if ("+-*/%()^=;".Contains(c))
 				{
+					if (c == '-')
+					{
+						if (i > 0 && IsUnaryMinus(c.ToString(), expression[i - 1].ToString()) && i != 1)
+						{
+							currentToken.Append(c);
+							continue;
+						}
+					}
+
 					if (initialMinus)
 					{
 						currentToken.Append(c);
@@ -190,6 +199,11 @@ namespace ComputorV2.Core.Lexing
 			}
 
 			return matrix.ToString();
+		}
+
+		private bool IsUnaryMinus(string token, string previousToken)
+		{
+			return "+-*/^(".Contains(previousToken) && token == "-";
 		}
 	}
 }

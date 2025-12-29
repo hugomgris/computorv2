@@ -73,7 +73,6 @@ namespace ComputorV2.Core.Math
 		private string ComputeMatrix(string expression)
 		{
 			// Adding matrix inversion as an afterthought made this function an abomination. I know God is watching me, but right now working > elgant
-			Console.WriteLine($"expr->{expression}");
 			bool isInversionCall = false;
 
 			if (expression.Contains("^-1"))
@@ -247,7 +246,7 @@ namespace ComputorV2.Core.Math
 		{		
 			string[] parts = input.Split('=');
 			if (parts.Length != 2)
-				throw new ArgumentException($"RationalNumber: Parser: expression can only contain one '=': {input}", nameof(input));
+				throw new ArgumentException($"Parser: expression can only contain one '=': {input}", nameof(input));
 
 			if (_parser.ValidateVariableName(parts[0]) == var_error.INVALIDCHAR)
 				throw new ArgumentException($"Assignation: variable name can only contain alphanumeric characters: {input}", nameof(input));
@@ -261,12 +260,16 @@ namespace ComputorV2.Core.Math
 			else if (HasVariables(parts[1]))
 				parts[1] = SubstituteVariables(parts[1]);
 
+			foreach(string part in parts) Console.WriteLine($"part->{part}");
+
 			if (_parser.DetectValueType(parts[1]) == cmd_type.MATRIX)
 				return StoreMatrix(parts);
 			else if (_parser.DetectValueType(parts[1]) == cmd_type.COMPLEX)
 				return StoreComplex(parts);
 			else if (_parser.DetectValueType(parts[1]) == cmd_type.RATIONAL)
 				return StoreRational(parts);
+			else if (_parser.DetectValueType(parts[1]) == cmd_type.INVALID)
+				throw new ArgumentException($"Parser: invalid type (check syntax!)", nameof(input));
 			else
 				return "";
 		}
@@ -370,7 +373,13 @@ namespace ComputorV2.Core.Math
 					
 					if (_variables.ContainsKey(var))
 					{
-						sb.Append(_variables[var]);
+						if (_variables[var].GetType() == typeof(Matrix))
+						{
+							string rebuiltMatrixString = "[" + _variables[var].ToString()!.Replace(" ", "").Replace("\n", ";") + "]";
+							sb.Append(rebuiltMatrixString);
+						}
+						else
+							sb.Append(_variables[var]);
 					}
 					else
 					{
@@ -383,7 +392,7 @@ namespace ComputorV2.Core.Math
 				}
 			}
 
-			return sb.ToString();
+			return sb.ToString().Replace(" ", "");
 		}
 
 		private string ResolveFunctionVariables(string expression, string excludedVariable)

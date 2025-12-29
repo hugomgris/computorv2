@@ -45,6 +45,8 @@ namespace ComputorV2.Core.Types
 			{
 				value = value.Substring(1, value.Length - 2);
 			}
+			else
+				throw new ArgumentException("Parsing: matrix input has open brackets");
 
 			string[] rowStrings = value.Split(';');
 			_rows = rowStrings.Length;

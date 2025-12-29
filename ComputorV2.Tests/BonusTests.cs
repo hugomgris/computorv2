@@ -31,8 +31,8 @@ namespace ComputorV2.Tests
 			Assert.True(vars.ContainsKey("m1"));
 			Assert.True(vars.ContainsKey("m2"));
 
-			Matrix i1 = new Matrix("[ -2 , 1 ];[ 3/2 , -1/2 ]");
-			Matrix i2 = new Matrix("[ 1 , -2 , 0 ];[ 0 , 1 , 0 ];[ 0 , 0 , 1 ]");
+			Matrix i1 = new Matrix("[[ -2 , 1 ];[ 3/2 , -1/2 ]]");
+			Matrix i2 = new Matrix("[[ 1 , -2 , 0 ];[ 0 , 1 , 0 ];[ 0 , 0 , 1 ]]");
 			Matrix m1 = (Matrix)vars["m1"];
 			Matrix m2 = (Matrix)vars["m2"];
 			Assert.Equal(i1.ToString(), m1.Inverse().ToString());

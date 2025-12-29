@@ -14,6 +14,9 @@ namespace ComputorV2.Core.Math
 
 		public Postfix(List<string> rawTokens)
 		{
+			if (!validateRawTokens(rawTokens))
+				throw new ArgumentException($"Tokenizer: invalid expression", nameof(rawTokens));
+			
 			PostfixTokens = new Stack<string>();
 
 			// 1. Tokens -> Infix Stack
@@ -97,7 +100,6 @@ namespace ComputorV2.Core.Math
 			Stack<string> PostfixStack = new Stack<string>();
 
 			while (reversedStack.Count > 0) PostfixStack.Push(reversedStack.Pop());
-;
 
 			while (PostfixStack.Count > 0)
 			{
@@ -186,6 +188,20 @@ namespace ComputorV2.Core.Math
 			Complex,
 			Matrix,
 			NoNumber
+		}
+
+		private bool validateRawTokens(List<string> rawTokens)
+		{
+			for (int i = 0; i < rawTokens.Count; i++)
+			{
+				if (IsOperator(rawTokens[i]))
+				{
+					if (i > 0 && IsOperator(rawTokens[i - 1]))
+						return false;
+				}
+			}
+
+			return true;
 		}
 
 		public bool IsOperator(string token)

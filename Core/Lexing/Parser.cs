@@ -51,7 +51,13 @@ namespace ComputorV2.Core.Lexing
 		public cmd_type DetectValueType(string value)
 		{
 			if (value.Contains("["))
+			{
+				if (!value.Contains("[["))
+					return cmd_type.INVALID;
+				else if (value.Contains("[[") && !value.Contains("]]"))
+					return cmd_type.INVALID;
 				return cmd_type.MATRIX;
+			}
 			else if (value.Contains("i"))
 				return cmd_type.COMPLEX;
 			else
