@@ -29,6 +29,13 @@ namespace ComputorV2.Core.Lexing
 		GOOD
 	}
 
+	public enum fun_error
+	{
+		INVALIDCHAR,
+		NOALPHA,
+		GOOD
+	}
+
 	public class Parser
 	{
 		public cmd_type DetectInputType(string input)
@@ -84,6 +91,24 @@ namespace ComputorV2.Core.Lexing
 				return var_error.NOALPHA;
 
 			return var_error.GOOD;
+		}
+
+		public fun_error ValidateFunctionName(string name)
+		{
+			int alpha = 0;
+			
+			foreach(char c in name)
+			{
+				if (!Char.IsLetter(c))
+					return fun_error.INVALIDCHAR;
+				else
+					alpha++;
+			}
+
+			if (alpha == 0)
+				return fun_error.NOALPHA;
+
+			return fun_error.GOOD;
 		}
 
 		public string ResolveVariables(string input)

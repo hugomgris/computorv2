@@ -346,6 +346,11 @@ namespace ComputorV2.Core.Math
 				throw new ArgumentException($"Parsing: Invalid function definition: {leftSide}");
 
 			string functionName = match.Groups[1].Value;
+			if (_parser.ValidateFunctionName(functionName) == fun_error.INVALIDCHAR)
+				throw new ArgumentException($"Assignation: function name can only contain letters: {input}", nameof(input));
+			else if (_parser.ValidateFunctionName(parts[0]) == fun_error.NOALPHA)
+				throw new ArgumentException($"Assignation: variable name must contain at least one alphabetical character: {input}", nameof(input));
+
 			string variable = match.Groups[2].Value;
 
 			foreach (char c in variable)
