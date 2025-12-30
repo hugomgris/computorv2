@@ -147,10 +147,7 @@ namespace ComputorV2.Core.Math
 			else
 				polyString = polyString + "+" + subRight;
 
-			
-			Console.WriteLine($"polystring->{polyString}");
 			Polynomial poly = new Polynomial(polyString);
-			Console.WriteLine($"poly->{poly}");
 
 			solutions = poly.Solve();
 			
@@ -191,6 +188,8 @@ namespace ComputorV2.Core.Math
 
 		private string SolveFunction(string input)
 		{
+			if (CheckIfInputAsksForStoredFunction(input))
+				return GetStoredFunction(input);
 			var parts = input.Split('=');
 			string leftSide = parts[0].Trim();
 
@@ -222,6 +221,32 @@ namespace ComputorV2.Core.Math
 			MathValue result = postfix.Calculate();
 			
 			return result.ToString()!;
+		}
+
+		bool CheckIfInputAsksForStoredFunction(string input)
+		{
+			if (input.EndsWith("=?"))
+			{
+				string key = input.Substring(0, input.IndexOf('('));
+				string variable = input.Substring(input.IndexOf('(') + 1, input.IndexOf(')') - 2);
+				if (_variables.ContainsKey(variable))
+					return false;
+					
+				if (_functions.ContainsKey(key) && _functions[key].Variable == variable)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		private string GetStoredFunction(string input)
+		{
+			string key = input.Substring(0, input.IndexOf('('));
+			if (_functions.ContainsKey(key))
+				return (_functions[key].ToString());
+			return "";
 		}
 
 		#endregion
@@ -324,7 +349,7 @@ namespace ComputorV2.Core.Math
 			string variable = match.Groups[2].Value;
 
 			string resolvedExpression = ResolveFunctionVariables(parts[1].Trim(), variable);
-			Polynomial poly = new Polynomial(resolvedExpression);
+			Polynomial poly = new Polynomial(resolvedExpression, variable);
 
 			var function = new Function(functionName, variable, poly);
 			_functions[functionName] = function;
@@ -421,7 +446,13 @@ namespace ComputorV2.Core.Math
 					}
 					else if (_variables.ContainsKey(var))
 					{
-						sb.Append(_variables[var]);
+						if (_variables[var].GetType() == typeof(Matrix))
+						{
+							string rebuiltMatrixString = "[" + _variables[var].ToString()!.Replace(" ", "").Replace("\n", ";") + "]";
+							sb.Append(rebuiltMatrixString);
+						}
+						else
+							sb.Append(_variables[var]);
 					}
 					else
 					{

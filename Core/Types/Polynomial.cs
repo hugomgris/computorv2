@@ -36,6 +36,13 @@ namespace ComputorV2.Core.Types
 			ParseExpression(expression.Trim());
 		}
 
+		public Polynomial(string expression, string variable)
+		{
+			_terms = new Dictionary<int, MathValue>();
+			_originalVariable = variable;
+			ParseExpression(expression.Trim());
+		}
+
 		public Polynomial(MathValue constant)
 		{
 			_terms = new Dictionary<int, MathValue> { { 0, constant } };
@@ -622,6 +629,24 @@ namespace ComputorV2.Core.Types
 				
 				if ((c == '+' || c == '-') && !isFirst)
 				{
+					int j = i;
+					while (j < expression.Length)
+					{
+						char d = expression[j];
+						if (j == '+' || j == '-')
+							break;
+						j++;
+					}
+
+					string tmp = expression.Substring(i, j - i);
+					if (tmp.Contains("i"))
+					{
+						terms.Add(expression.Substring(0, j));
+						currentTerm.Clear();
+						i = j - 1;
+						continue;
+					}
+					
 					if (currentTerm.Length > 0)
 					{
 						terms.Add(currentTerm.ToString());
@@ -651,7 +676,7 @@ namespace ComputorV2.Core.Types
 				term = term.Substring(1);
 			}
 			
-			MathValue coefficient = new RationalNumber(1);
+			MathValue? coefficient = null;
 			int power = 0;
 
 			if (term.Contains(_originalVariable))
@@ -680,9 +705,15 @@ namespace ComputorV2.Core.Types
 					}
 					else
 					{
-						if (RationalNumber.TryParse(coeffPart, out var parsedCoeff))
+						if (Matrix.TryParse(coeffPart, out var parsedMatrix))
+							coefficient = parsedMatrix!;
+						else if (coeffPart.Contains("i") && ComplexNumber.TryParse(coeffPart, out var parsedComplex))
 						{
-							coefficient = parsedCoeff!;
+							coefficient = parsedComplex!;
+						}
+						else if (RationalNumber.TryParse(coeffPart, out var parsedRational))
+						{
+							coefficient = parsedRational!;
 						}
 					}
 					power = 1;
@@ -690,6 +721,9 @@ namespace ComputorV2.Core.Types
 				
 				if (term.Contains("^"))
 				{
+					Console.WriteLine(coefficient);
+					if (coefficient == null)
+						coefficient = new RationalNumber(1);
 					var powerPart = term.Substring(term.IndexOf('^') + 1);
 					if (int.TryParse(powerPart, out int parsedPower))
 					{
@@ -741,6 +775,7 @@ namespace ComputorV2.Core.Types
 					i += _originalVariable.Length;
 				}
 			}
+			Console.WriteLine($"original variable->{_originalVariable}");
 		}
 
 		private string ConvertToXTerm(string term)
