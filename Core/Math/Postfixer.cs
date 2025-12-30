@@ -253,6 +253,7 @@ namespace ComputorV2.Core.Math
 			{
 				case "=":
 				case "!":
+				case "^":
 					return Associativenesses.Right;
 				case "+":
 				case "-":

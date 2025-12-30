@@ -948,7 +948,10 @@ namespace ComputorV2.Core.Types
 					else
 					{
 						if (char.IsDigit(left[i]))
-							sb.Append((decimal.Parse(left[i].ToString()) * decimal.Parse(right)).ToString());
+						{
+							accumulatedNumber += left[i].ToString();
+							sb.Append((decimal.Parse(accumulatedNumber) * decimal.Parse(right)).ToString());
+						}
 						else if (left[i] == 'x')
 						{
 							if (accumulatedNumber.Length > 0)
