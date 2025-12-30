@@ -231,7 +231,7 @@ namespace ComputorV2.Core.Math
 				string variable = input.Substring(input.IndexOf('(') + 1, input.IndexOf(')') - 2);
 				if (_variables.ContainsKey(variable))
 					return false;
-					
+
 				if (_functions.ContainsKey(key) && _functions[key].Variable == variable)
 				{
 					return true;
@@ -274,7 +274,7 @@ namespace ComputorV2.Core.Math
 				throw new ArgumentException($"Parser: expression can only contain one '=': {input}", nameof(input));
 
 			if (_parser.ValidateVariableName(parts[0]) == var_error.INVALIDCHAR)
-				throw new ArgumentException($"Assignation: variable name can only contain alphanumeric characters: {input}", nameof(input));
+				throw new ArgumentException($"Assignation: variable name can only contain letters: {input}", nameof(input));
 			else if (_parser.ValidateVariableName(parts[0]) == var_error.HASICHAR)
 				throw new ArgumentException($"Assignation: variable name can not contain 'i' character: {input}", nameof(input));
 			else if (_parser.ValidateVariableName(parts[0]) == var_error.NOALPHA)
@@ -347,6 +347,12 @@ namespace ComputorV2.Core.Math
 
 			string functionName = match.Groups[1].Value;
 			string variable = match.Groups[2].Value;
+
+			foreach (char c in variable)
+			{
+				if (!char.IsLetter(c))
+					throw new ArgumentException($"Parsing: Variables can only contain letters:{variable}");
+			}
 
 			string resolvedExpression = ResolveFunctionVariables(parts[1].Trim(), variable);
 			Polynomial poly = new Polynomial(resolvedExpression, variable);

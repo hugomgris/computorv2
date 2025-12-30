@@ -70,7 +70,7 @@ namespace ComputorV2.Core.Lexing
 			
 			foreach(char c in name)
 			{
-				if (!Char.IsLetterOrDigit(c))
+				if (!Char.IsLetter(c))
 					return var_error.INVALIDCHAR;
 
 				if (c == 'i')
