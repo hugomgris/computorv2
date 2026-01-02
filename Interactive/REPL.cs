@@ -130,7 +130,7 @@ namespace ComputorV2.Interactive
 					}
 					
 					string result = ProcessCommand(input);
-					result = result.Replace("[[", "[").Replace("]]", "]");
+					result = result.Replace("[[", "[").Replace("]]", "]").Replace(";", "\n");
 					_historyManager.AddCommand(input);
 					
 					if (!string.IsNullOrEmpty(result))
@@ -237,6 +237,12 @@ namespace ComputorV2.Interactive
 
 		private string ProcessCommand(string input)
 		{
+			if (input.Count(x=>x=='=') > 1)
+				throw new ArgumentException($"Parser: expression can only contain one '=' token: {input}", nameof(input));
+
+			if (input.Contains("?") && !input.EndsWith("?"))
+				throw new ArgumentException($"Parser: Invalid expression: '?' token must close expression: {input}", nameof(input));
+			
 			string result;
 			string trimmed = input.Trim().Replace(" ", "");
 			

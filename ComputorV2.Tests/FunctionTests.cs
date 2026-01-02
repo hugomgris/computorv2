@@ -59,13 +59,13 @@ namespace ComputorV2.Tests
 			Assert.Equal("x^2 - 4 * x - 1", functions["funI"].Expression.ToString());
 		}
 
-		/* [Fact]
+		[Fact]
 		public void Matrix_DirectComputationTests()
 		{
 			Matrix m1 = new Matrix(_evaluator.Compute("[[1,2]]+[[1,2]]"));
 			Matrix m2 = new Matrix(_evaluator.Compute("[[5+10i, -98i+50]]+[[25i,-800i]]"));
 			Assert.Equal(m1, new Matrix("[[2,4]]"));
 			Assert.Equal(m2, new Matrix("[[5+35i,50-898i]]"));
-		} */
+		}
 	}
 }

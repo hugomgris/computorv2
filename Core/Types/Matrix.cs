@@ -607,7 +607,7 @@ namespace ComputorV2.Core.Types
 				}
 				lines.Add("[ " + string.Join(" , ", row) + " ]");
 			}
-			string output = string.Join("\n", lines);
+			string output = string.Join(";", lines);
 			output = "[" + output + "]";
 			return output;
 		}

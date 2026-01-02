@@ -709,12 +709,17 @@ namespace ComputorV2.Core.Types
 					}
 					
 					var coeffPart = parts[0].Replace("*", "");
+					if (coeffPart.StartsWith("i"))
+						coeffPart = coeffPart.Replace("i", "") + "i";
+
 					if (string.IsNullOrEmpty(coeffPart))
 					{
 						coefficient = new RationalNumber(1);
 					}
 					else
 					{
+						if (coeffPart.Contains("^"))
+							coeffPart = coeffPart.Substring(0, coeffPart.IndexOf('^'));
 						if (Matrix.TryParse(coeffPart, out var parsedMatrix))
 						{
 							coefficient = parsedMatrix!;
@@ -864,9 +869,9 @@ namespace ComputorV2.Core.Types
 
 			for (int i = 1; i < parts.Length; i++)
 			{
-				if (term.Contains("*"))
+				if (parts[i].Contains("*"))
 					term += parts[i];
-				else if (term.Contains("^"))
+				else if (parts[i].Contains("^"))
 					stored += parts[i];
 			}
 
@@ -986,13 +991,7 @@ namespace ComputorV2.Core.Types
 
 			parenthesis = ExecuteExpansion(parenthesis, op, true);
 
-			// DEBUG
-			Console.WriteLine($"left->{left}");
-			Console.WriteLine($"parenthesis->{parenthesis}");
-			Console.WriteLine($"right->{right}");
-
 			expression = left + parenthesis.Replace("(", "").Replace(")", "") + right;
-			Console.WriteLine($"returning->{expression}");
 
 			return expression;
 		}

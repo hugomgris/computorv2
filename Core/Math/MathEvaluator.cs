@@ -64,7 +64,6 @@ namespace ComputorV2.Core.Math
 		private string ComputeComplex(string expression)
 		{
 			List<string> tokens = _tokenizer.Tokenize(expression.Replace("?","").Replace("=",""));
-			foreach(string tok in tokens) Console.WriteLine($"token->{tok}");
 			Postfix postfix = new Postfix(tokens);
 
 			var result = (ComplexNumber)postfix.Calculate();
@@ -172,7 +171,10 @@ namespace ComputorV2.Core.Math
 
 			foreach (string function in functions)
 			{
-				input = input.Replace(function, SolveFunction(function));
+				if (function.Contains("(") && function.Contains(")"))
+					input = input.Replace(function, SolveFunction(function));
+				else
+					continue;
 			}
 
 			input = input.Replace("?", "").Replace("=", "");
@@ -273,7 +275,7 @@ namespace ComputorV2.Core.Math
 		{		
 			string[] parts = input.Split('=');
 			if (parts.Length != 2)
-				throw new ArgumentException($"Parser: expression can only contain one '=': {input}", nameof(input));
+				throw new ArgumentException($"Parser: expression can only contain one '=' token: {input}", nameof(input));
 
 			if (_parser.ValidateVariableName(parts[0]) == var_error.INVALIDCHAR)
 				throw new ArgumentException($"Assignation: variable name can only contain letters: {input}", nameof(input));
@@ -410,13 +412,7 @@ namespace ComputorV2.Core.Math
 					
 					if (_variables.ContainsKey(var))
 					{
-						if (_variables[var].GetType() == typeof(Matrix))
-						{
-							string rebuiltMatrixString = "[" + _variables[var].ToString()!.Replace(" ", "").Replace("\n", ";") + "]";
-							sb.Append(rebuiltMatrixString);
-						}
-						else
-							sb.Append(_variables[var]);
+						sb.Append(_variables[var]);
 					}
 					else
 					{

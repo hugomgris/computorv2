@@ -315,7 +315,7 @@ namespace ComputorV2.Core.Math
 			if (tokens[idx] != "*" || tokens[idx - 1] != "*")
 				return false;
 
-			if (Matrix.TryParse(tokens[idx - 2], out _) && Matrix.TryParse(tokens[idx + 1], out _))
+			if (Matrix.TryParse(tokens[idx - 2].Replace("\n", ";"), out _) && Matrix.TryParse(tokens[idx + 1].Replace("\n", ";"), out _))
 				return true;
 
 			return false;
