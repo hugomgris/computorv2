@@ -14,7 +14,7 @@ namespace ComputorV2.Core.Math
 
 		public Postfix(List<string> rawTokens)
 		{
-			if (!validateRawTokens(rawTokens))
+			if (!validateRawTokens(rawTokens, out rawTokens))
 				throw new ArgumentException($"Tokenizer: invalid expression", nameof(rawTokens));
 			
 			PostfixTokens = new Stack<string>();
@@ -189,14 +189,27 @@ namespace ComputorV2.Core.Math
 			NoNumber
 		}
 
-		private bool validateRawTokens(List<string> rawTokens)
+		private bool validateRawTokens(List<string> rawTokens, out List<string> cleanedTokens)
 		{
+			cleanedTokens = rawTokens;
 			for (int i = 0; i < rawTokens.Count; i++)
 			{
 				if (IsOperator(rawTokens[i]))
 				{
 					if (i > 0 && IsOperator(rawTokens[i - 1]))
+					{
+						if (rawTokens[i] == "*" && rawTokens[i - 1] == "*")
+						{
+							if (CheckIfOperationIsMatrixMultiplication(rawTokens, i))
+							{
+								cleanedTokens.RemoveAt(i);
+								return true;
+							}
+							return false;
+						}
+						
 						return false;
+					}
 				}
 			}
 
@@ -295,6 +308,17 @@ namespace ComputorV2.Core.Math
 			}
 			else
 				throw new ArgumentException("Postfixer: Unhandled operator in calculation");
+		}
+
+		private bool CheckIfOperationIsMatrixMultiplication(List<string> tokens, int idx)
+		{
+			if (tokens[idx] != "*" || tokens[idx - 1] != "*")
+				return false;
+
+			if (Matrix.TryParse(tokens[idx - 2], out _) && Matrix.TryParse(tokens[idx + 1], out _))
+				return true;
+
+			return false;
 		}
 
 		#endregion

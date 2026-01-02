@@ -690,6 +690,7 @@ namespace ComputorV2.Core.Types
 			if (term.Contains("x") || term.Contains("X"))
 			{
 				var parts = term.Split(new char[] { 'x', 'X' }, StringSplitOptions.RemoveEmptyEntries);
+
 				
 				if (parts.Length == 0 || string.IsNullOrEmpty(parts[0]))
 				{
@@ -698,6 +699,11 @@ namespace ComputorV2.Core.Types
 				}
 				else
 				{
+					if (parts.Length > 1)
+					{
+						parts = ComputeMultipleTerm(parts);
+					}
+					
 					var coeffPart = parts[0].Replace("*", "");
 					if (string.IsNullOrEmpty(coeffPart))
 					{
@@ -845,6 +851,29 @@ namespace ComputorV2.Core.Types
 			string? returnTerm = (containsVariable) ? value.ToString() + "x" : value.ToString();
 			
 			return returnTerm!;
+		}
+
+		private string[] ComputeMultipleTerm(string[] parts)
+		{
+			string term = parts[0].Replace("*", "");
+			string stored = "";
+
+			for (int i = 1; i < parts.Length; i++)
+			{
+				if (term.Contains("*"))
+					term += parts[i];
+				else if (term.Contains("^"))
+					stored += parts[i];
+			}
+
+			Tokenizer tokenizer = new Tokenizer();
+			List<string> tokens = tokenizer.Tokenize(term);
+			Postfix postfix = new Postfix(tokens);
+			var result = postfix.Calculate();
+
+			string[] solved = new string[1];
+			solved[0] = result.ToString() + stored;
+			return solved;
 		}
 		
 		private bool CheckIfNeedsExpansion(string expression)

@@ -362,6 +362,7 @@ namespace ComputorV2.Core.Math
 			}
 
 			string resolvedExpression = ResolveFunctionVariables(parts[1].Trim(), variable);
+
 			Polynomial poly = new Polynomial(resolvedExpression, variable);
 
 			var function = new Function(functionName, variable, poly);
