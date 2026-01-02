@@ -590,9 +590,13 @@ namespace ComputorV2.Core.Types
 				return;
 			}
 
-			while (CheckIfNeedsExpansion(expression))
+			string side = "";
+			while (CheckIfNeedsExpansion(expression, out side))
 			{
-				expression = Expand(expression);
+				if (side == "left")
+					expression = ExpandLeft(expression);
+				else if (side == "right")
+					expression = ExpandRight(expression);
 			}
 			expression = NormalizeExpression(expression);
 
@@ -876,13 +880,39 @@ namespace ComputorV2.Core.Types
 			return solved;
 		}
 		
-		private bool CheckIfNeedsExpansion(string expression)
+		private bool CheckIfNeedsExpansion(string expression, out string side)
 		{
 			var match = System.Text.RegularExpressions.Regex.Match(expression, @"\((.*)\)");
-			return match.Success;
+			if (match.Success)
+			{
+				side = GetExpansionSide(expression);
+
+				return true;
+			}
+			side = "";
+
+			return false;
 		}
 
-		private string Expand(string expression)
+		private string GetExpansionSide(string expression)
+		{
+			for (int i = 0; i < expression.Length; i++)
+			{
+				char c = expression[i];
+
+				if (c == '(')
+				{
+					if (i > 0 && expression[i - 1] == '*')
+					{
+						return "right";
+					}
+				}
+			}
+
+			return "left";
+		}
+
+		private string ExpandLeft(string expression)
 		{
 			int openIndex = 0;
 			int closeIndex = 0;
@@ -901,6 +931,7 @@ namespace ComputorV2.Core.Types
 			string left = expression.Substring(0, openIndex);
 			string parenthesis = expression.Substring(openIndex);
 			string op;
+
 			if (closeIndex < expression.Length - 1)
 				op = expression[closeIndex + 1].ToString();
 			else
@@ -928,11 +959,56 @@ namespace ComputorV2.Core.Types
 			return result;
 		}
 
-		private string ExecuteExpansion(string expression, string op)
+		private string ExpandRight(string expression)
+		{
+			int openIndex = 0;
+			int closeIndex = 0;
+
+			for (int i = 0; i < expression.Length; i++)
+			{
+				char c = expression[i];
+				if (c == '(')
+					openIndex = i;
+				else if (c == ')')
+					closeIndex = i;
+				
+				if (openIndex != 0 && closeIndex != 0)
+					break;
+			}
+
+			if (expression[openIndex - 1] == '*') openIndex--;
+			while (char.IsDigit(expression[openIndex])) openIndex--;
+
+			string left = expression.Substring(0, openIndex - 1);
+			string parenthesis = expression.Substring(openIndex - 1, closeIndex - openIndex + 2);
+			string right = expression.Substring(closeIndex + 1);
+			string op = "*";
+
+			parenthesis = ExecuteExpansion(parenthesis, op, true);
+
+			// DEBUG
+			Console.WriteLine($"left->{left}");
+			Console.WriteLine($"parenthesis->{parenthesis}");
+			Console.WriteLine($"right->{right}");
+
+			expression = left + parenthesis.Replace("(", "").Replace(")", "") + right;
+			Console.WriteLine($"returning->{expression}");
+
+			return expression;
+		}
+
+		private string ExecuteExpansion(string expression, string op, bool invert = false)
 		{
 			string[] parts = expression.Split(op);
 			string left = parts[0].Trim('(', ')');
 			string right = parts[1];
+
+			if (invert)
+			{
+				string tmp = left;
+				left = right;
+				right = tmp;
+			}
 
 			switch (op)
 			{
