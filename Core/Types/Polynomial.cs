@@ -706,7 +706,9 @@ namespace ComputorV2.Core.Types
 					else
 					{
 						if (Matrix.TryParse(coeffPart, out var parsedMatrix))
+						{
 							coefficient = parsedMatrix!;
+						}
 						else if (coeffPart.Contains("i") && ComplexNumber.TryParse(coeffPart, out var parsedComplex))
 						{
 							coefficient = parsedComplex!;

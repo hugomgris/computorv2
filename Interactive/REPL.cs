@@ -130,6 +130,7 @@ namespace ComputorV2.Interactive
 					}
 					
 					string result = ProcessCommand(input);
+					result = result.Replace("[[", "[").Replace("]]", "]");
 					_historyManager.AddCommand(input);
 					
 					if (!string.IsNullOrEmpty(result))

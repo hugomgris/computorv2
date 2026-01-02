@@ -597,6 +597,7 @@ namespace ComputorV2.Core.Types
 			if (_rows == 0 || _cols == 0) return "[]";
 			
 			var lines = new List<string>();
+			
 			for (int i = 0; i < _rows; i++)
 			{
 				var row = new List<string>();
@@ -606,7 +607,9 @@ namespace ComputorV2.Core.Types
 				}
 				lines.Add("[ " + string.Join(" , ", row) + " ]");
 			}
-			return string.Join("\n", lines);
+			string output = string.Join("\n", lines);
+			output = "[" + output + "]";
+			return output;
 		}
 
 		#endregion

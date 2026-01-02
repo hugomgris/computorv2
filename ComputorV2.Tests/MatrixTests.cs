@@ -45,8 +45,8 @@ namespace ComputorV2.Tests
 		[Fact]
 		public void Matrix_DirectComputationTests()
 		{
-			Assert.Equal("[2,4]", _evaluator.Compute("[[1,2]]+[[1,2]]").Replace(" ", ""));
-			Assert.Equal("[5+35i,50-898i]", _evaluator.Compute("[[5+10i, -98i+50]]+[[25i,-800i]]").Replace(" ", ""));
+			Assert.Equal("[[2,4]]", _evaluator.Compute("[[1,2]]+[[1,2]]").Replace(" ", ""));
+			Assert.Equal("[[5+35i,50-898i]]", _evaluator.Compute("[[5+10i, -98i+50]]+[[25i,-800i]]").Replace(" ", ""));
 		}
 	}
 }

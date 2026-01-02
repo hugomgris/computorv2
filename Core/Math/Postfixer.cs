@@ -89,7 +89,6 @@ namespace ComputorV2.Core.Math
 			while (output.Count > 0) reversedStack.Push(output.Pop());
 
 			PostfixTokens = reversedStack;
-
 		}
 
 		public MathValue Calculate()

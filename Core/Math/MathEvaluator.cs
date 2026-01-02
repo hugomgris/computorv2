@@ -64,6 +64,7 @@ namespace ComputorV2.Core.Math
 		private string ComputeComplex(string expression)
 		{
 			List<string> tokens = _tokenizer.Tokenize(expression.Replace("?","").Replace("=",""));
+			foreach(string tok in tokens) Console.WriteLine($"token->{tok}");
 			Postfix postfix = new Postfix(tokens);
 
 			var result = (ComplexNumber)postfix.Calculate();
@@ -217,6 +218,7 @@ namespace ComputorV2.Core.Math
 			string[] split = functionString.Split('=');
 			
 			List<string> tokens = _tokenizer.Tokenize(split[1]);
+
 			Postfix postfix = new Postfix(tokens);
 			MathValue result = postfix.Calculate();
 			
