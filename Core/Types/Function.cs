@@ -70,7 +70,7 @@ namespace ComputorV2.Core.Types
 				return matrix;
 			}
 
-			throw new NotImplementedException(($"Function evaluation is not implemented fo {_expression.GetType()}"));
+			throw new NotImplementedException(($"Function evaluation is not implemented for {_expression.GetType()}"));
 		}
 
 		public override string ToString()

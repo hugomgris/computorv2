@@ -14,6 +14,9 @@ namespace ComputorV2.Core.Math
 
 		public Postfix(List<string> rawTokens)
 		{
+			if (!validateRawTokens(rawTokens, out rawTokens))
+				throw new ArgumentException($"Tokenizer: invalid expression", nameof(rawTokens));
+			
 			PostfixTokens = new Stack<string>();
 
 			// 1. Tokens -> Infix Stack
@@ -86,7 +89,6 @@ namespace ComputorV2.Core.Math
 			while (output.Count > 0) reversedStack.Push(output.Pop());
 
 			PostfixTokens = reversedStack;
-
 		}
 
 		public MathValue Calculate()
@@ -97,7 +99,6 @@ namespace ComputorV2.Core.Math
 			Stack<string> PostfixStack = new Stack<string>();
 
 			while (reversedStack.Count > 0) PostfixStack.Push(reversedStack.Pop());
-;
 
 			while (PostfixStack.Count > 0)
 			{
@@ -188,6 +189,33 @@ namespace ComputorV2.Core.Math
 			NoNumber
 		}
 
+		private bool validateRawTokens(List<string> rawTokens, out List<string> cleanedTokens)
+		{
+			cleanedTokens = rawTokens;
+			for (int i = 0; i < rawTokens.Count; i++)
+			{
+				if (IsOperator(rawTokens[i]))
+				{
+					if (i > 0 && IsOperator(rawTokens[i - 1]))
+					{
+						if (rawTokens[i] == "*" && rawTokens[i - 1] == "*")
+						{
+							if (CheckIfOperationIsMatrixMultiplication(rawTokens, i))
+							{
+								cleanedTokens.RemoveAt(i);
+								return true;
+							}
+							return false;
+						}
+						
+						return false;
+					}
+				}
+			}
+
+			return true;
+		}
+
 		public bool IsOperator(string token)
 		{
 			return token.Length == 1 && "-*/+%^".Contains(token);
@@ -237,6 +265,7 @@ namespace ComputorV2.Core.Math
 			{
 				case "=":
 				case "!":
+				case "^":
 					return Associativenesses.Right;
 				case "+":
 				case "-":
@@ -279,6 +308,17 @@ namespace ComputorV2.Core.Math
 			}
 			else
 				throw new ArgumentException("Postfixer: Unhandled operator in calculation");
+		}
+
+		private bool CheckIfOperationIsMatrixMultiplication(List<string> tokens, int idx)
+		{
+			if (tokens[idx] != "*" || tokens[idx - 1] != "*")
+				return false;
+
+			if (Matrix.TryParse(tokens[idx - 2].Replace("\n", ";"), out _) && Matrix.TryParse(tokens[idx + 1].Replace("\n", ";"), out _))
+				return true;
+
+			return false;
 		}
 
 		#endregion

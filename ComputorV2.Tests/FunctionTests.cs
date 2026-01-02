@@ -28,7 +28,7 @@ namespace ComputorV2.Tests
 			_evaluator.Assign("funC(z) = -2 * z - 5");
 			_evaluator.Assign("funD(varblehell) = 2 * 4 + varblehell");
 			_evaluator.Assign("funE(x) =4-5+(x+2)+2-4");
-			_evaluator.Assign("funE2(x) =4-5+(x+2)-200-4");
+			_evaluator.Assign("funEE(x) =4-5+(x+2)-200-4");
 			_evaluator.Assign("funF(x)=4-5+(x+2)*2-4+(3x+5)*18");
 			_evaluator.Assign("funG(x)=4+5+(x+2)/2+4 + (15 + 15x)/2");
 			_evaluator.Assign("funH(x) = 4-5+(x+2)^2-4");
@@ -41,7 +41,7 @@ namespace ComputorV2.Tests
 			Assert.True(functions.ContainsKey("funC"));
 			Assert.True(functions.ContainsKey("funD"));
 			Assert.True(functions.ContainsKey("funE"));
-			Assert.True(functions.ContainsKey("funE2"));
+			Assert.True(functions.ContainsKey("funEE"));
 			Assert.True(functions.ContainsKey("funF"));
 			Assert.True(functions.ContainsKey("funG"));
 			Assert.True(functions.ContainsKey("funH"));
@@ -52,20 +52,20 @@ namespace ComputorV2.Tests
 			Assert.Equal("-2 * z - 5", functions["funC"].Expression.ToString());
 			Assert.Equal("varblehell + 8", functions["funD"].Expression.ToString());
 			Assert.Equal("x - 1", functions["funE"].Expression.ToString());
-			Assert.Equal("x - 203", functions["funE2"].Expression.ToString());
+			Assert.Equal("x - 203", functions["funEE"].Expression.ToString());
 			Assert.Equal("56 * x + 89", functions["funF"].Expression.ToString());
 			Assert.Equal("8 * x + 43/2", functions["funG"].Expression.ToString());
 			Assert.Equal("x^2 + 4 * x - 1", functions["funH"].Expression.ToString());
 			Assert.Equal("x^2 - 4 * x - 1", functions["funI"].Expression.ToString());
 		}
 
-		/* [Fact]
+		[Fact]
 		public void Matrix_DirectComputationTests()
 		{
 			Matrix m1 = new Matrix(_evaluator.Compute("[[1,2]]+[[1,2]]"));
 			Matrix m2 = new Matrix(_evaluator.Compute("[[5+10i, -98i+50]]+[[25i,-800i]]"));
 			Assert.Equal(m1, new Matrix("[[2,4]]"));
 			Assert.Equal(m2, new Matrix("[[5+35i,50-898i]]"));
-		} */
+		}
 	}
 }

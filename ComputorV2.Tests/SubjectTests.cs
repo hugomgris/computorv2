@@ -220,8 +220,8 @@ namespace ComputorV2.Tests
 			Assert.True(vars.ContainsKey("matA"));
 			Assert.True(vars.ContainsKey("matB"));
 
-			Assert.Equal("[ 1 , 2 ]\n[ 3 , 2 ]\n[ 3 , 4 ]", vars["matA"].ToString());
-			Assert.Equal("[ 1 , 2 ]", vars["matB"].ToString());
+			Assert.Equal("[[ 1 , 2 ];[ 3 , 2 ];[ 3 , 4 ]]", vars["matA"].ToString());
+			Assert.Equal("[[ 1 , 2 ]]", vars["matB"].ToString());
 		}
 
 		[Fact]

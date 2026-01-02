@@ -73,7 +73,6 @@ namespace ComputorV2.Core.Math
 		private string ComputeMatrix(string expression)
 		{
 			// Adding matrix inversion as an afterthought made this function an abomination. I know God is watching me, but right now working > elgant
-			Console.WriteLine($"expr->{expression}");
 			bool isInversionCall = false;
 
 			if (expression.Contains("^-1"))
@@ -148,10 +147,7 @@ namespace ComputorV2.Core.Math
 			else
 				polyString = polyString + "+" + subRight;
 
-			
-			Console.WriteLine($"polystring->{polyString}");
 			Polynomial poly = new Polynomial(polyString);
-			Console.WriteLine($"poly->{poly}");
 
 			solutions = poly.Solve();
 			
@@ -175,7 +171,10 @@ namespace ComputorV2.Core.Math
 
 			foreach (string function in functions)
 			{
-				input = input.Replace(function, SolveFunction(function));
+				if (function.Contains("(") && function.Contains(")"))
+					input = input.Replace(function, SolveFunction(function));
+				else
+					continue;
 			}
 
 			input = input.Replace("?", "").Replace("=", "");
@@ -192,6 +191,8 @@ namespace ComputorV2.Core.Math
 
 		private string SolveFunction(string input)
 		{
+			if (CheckIfInputAsksForStoredFunction(input))
+				return GetStoredFunction(input);
 			var parts = input.Split('=');
 			string leftSide = parts[0].Trim();
 
@@ -219,10 +220,37 @@ namespace ComputorV2.Core.Math
 			string[] split = functionString.Split('=');
 			
 			List<string> tokens = _tokenizer.Tokenize(split[1]);
+
 			Postfix postfix = new Postfix(tokens);
 			MathValue result = postfix.Calculate();
 			
 			return result.ToString()!;
+		}
+
+		bool CheckIfInputAsksForStoredFunction(string input)
+		{
+			if (input.EndsWith("=?"))
+			{
+				string key = input.Substring(0, input.IndexOf('('));
+				string variable = input.Substring(input.IndexOf('(') + 1, input.IndexOf(')') - 2);
+				if (_variables.ContainsKey(variable))
+					return false;
+
+				if (_functions.ContainsKey(key) && _functions[key].Variable == variable)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		private string GetStoredFunction(string input)
+		{
+			string key = input.Substring(0, input.IndexOf('('));
+			if (_functions.ContainsKey(key))
+				return (_functions[key].ToString());
+			return "";
 		}
 
 		#endregion
@@ -247,10 +275,10 @@ namespace ComputorV2.Core.Math
 		{		
 			string[] parts = input.Split('=');
 			if (parts.Length != 2)
-				throw new ArgumentException($"RationalNumber: Parser: expression can only contain one '=': {input}", nameof(input));
+				throw new ArgumentException($"Parser: expression can only contain one '=' token: {input}", nameof(input));
 
 			if (_parser.ValidateVariableName(parts[0]) == var_error.INVALIDCHAR)
-				throw new ArgumentException($"Assignation: variable name can only contain alphanumeric characters: {input}", nameof(input));
+				throw new ArgumentException($"Assignation: variable name can only contain letters: {input}", nameof(input));
 			else if (_parser.ValidateVariableName(parts[0]) == var_error.HASICHAR)
 				throw new ArgumentException($"Assignation: variable name can not contain 'i' character: {input}", nameof(input));
 			else if (_parser.ValidateVariableName(parts[0]) == var_error.NOALPHA)
@@ -267,6 +295,8 @@ namespace ComputorV2.Core.Math
 				return StoreComplex(parts);
 			else if (_parser.DetectValueType(parts[1]) == cmd_type.RATIONAL)
 				return StoreRational(parts);
+			else if (_parser.DetectValueType(parts[1]) == cmd_type.INVALID)
+				throw new ArgumentException($"Parser: invalid type (check syntax!)", nameof(input));
 			else
 				return "";
 		}
@@ -320,10 +350,22 @@ namespace ComputorV2.Core.Math
 				throw new ArgumentException($"Parsing: Invalid function definition: {leftSide}");
 
 			string functionName = match.Groups[1].Value;
+			if (_parser.ValidateFunctionName(functionName) == fun_error.INVALIDCHAR)
+				throw new ArgumentException($"Assignation: function name can only contain letters: {input}", nameof(input));
+			else if (_parser.ValidateFunctionName(parts[0]) == fun_error.NOALPHA)
+				throw new ArgumentException($"Assignation: variable name must contain at least one alphabetical character: {input}", nameof(input));
+
 			string variable = match.Groups[2].Value;
 
+			foreach (char c in variable)
+			{
+				if (!char.IsLetter(c))
+					throw new ArgumentException($"Parsing: Variables can only contain letters:{variable}");
+			}
+
 			string resolvedExpression = ResolveFunctionVariables(parts[1].Trim(), variable);
-			Polynomial poly = new Polynomial(resolvedExpression);
+
+			Polynomial poly = new Polynomial(resolvedExpression, variable);
 
 			var function = new Function(functionName, variable, poly);
 			_functions[functionName] = function;
@@ -383,7 +425,7 @@ namespace ComputorV2.Core.Math
 				}
 			}
 
-			return sb.ToString();
+			return sb.ToString().Replace(" ", "");
 		}
 
 		private string ResolveFunctionVariables(string expression, string excludedVariable)
@@ -414,7 +456,13 @@ namespace ComputorV2.Core.Math
 					}
 					else if (_variables.ContainsKey(var))
 					{
-						sb.Append(_variables[var]);
+						if (_variables[var].GetType() == typeof(Matrix))
+						{
+							string rebuiltMatrixString = "[" + _variables[var].ToString()!.Replace(" ", "").Replace("\n", ";") + "]";
+							sb.Append(rebuiltMatrixString);
+						}
+						else
+							sb.Append(_variables[var]);
 					}
 					else
 					{

@@ -36,6 +36,13 @@ namespace ComputorV2.Core.Types
 			ParseExpression(expression.Trim());
 		}
 
+		public Polynomial(string expression, string variable)
+		{
+			_terms = new Dictionary<int, MathValue>();
+			_originalVariable = variable;
+			ParseExpression(expression.Trim());
+		}
+
 		public Polynomial(MathValue constant)
 		{
 			_terms = new Dictionary<int, MathValue> { { 0, constant } };
@@ -583,9 +590,13 @@ namespace ComputorV2.Core.Types
 				return;
 			}
 
-			while (CheckIfNeedsExpansion(expression))
+			string side = "";
+			while (CheckIfNeedsExpansion(expression, out side))
 			{
-				expression = Expand(expression);
+				if (side == "left")
+					expression = ExpandLeft(expression);
+				else if (side == "right")
+					expression = ExpandRight(expression);
 			}
 			expression = NormalizeExpression(expression);
 
@@ -622,6 +633,24 @@ namespace ComputorV2.Core.Types
 				
 				if ((c == '+' || c == '-') && !isFirst)
 				{
+					int j = i;
+					while (j < expression.Length)
+					{
+						char d = expression[j];
+						if (j == '+' || j == '-')
+							break;
+						j++;
+					}
+
+					string tmp = expression.Substring(i, j - i);
+					if (tmp.Contains("i"))
+					{
+						terms.Add(expression.Substring(0, j));
+						currentTerm.Clear();
+						i = j - 1;
+						continue;
+					}
+					
 					if (currentTerm.Length > 0)
 					{
 						terms.Add(currentTerm.ToString());
@@ -651,7 +680,7 @@ namespace ComputorV2.Core.Types
 				term = term.Substring(1);
 			}
 			
-			MathValue coefficient = new RationalNumber(1);
+			MathValue? coefficient = null;
 			int power = 0;
 
 			if (term.Contains(_originalVariable))
@@ -665,6 +694,7 @@ namespace ComputorV2.Core.Types
 			if (term.Contains("x") || term.Contains("X"))
 			{
 				var parts = term.Split(new char[] { 'x', 'X' }, StringSplitOptions.RemoveEmptyEntries);
+
 				
 				if (parts.Length == 0 || string.IsNullOrEmpty(parts[0]))
 				{
@@ -673,16 +703,34 @@ namespace ComputorV2.Core.Types
 				}
 				else
 				{
+					if (parts.Length > 1)
+					{
+						parts = ComputeMultipleTerm(parts);
+					}
+					
 					var coeffPart = parts[0].Replace("*", "");
+					if (coeffPart.StartsWith("i"))
+						coeffPart = coeffPart.Replace("i", "") + "i";
+
 					if (string.IsNullOrEmpty(coeffPart))
 					{
 						coefficient = new RationalNumber(1);
 					}
 					else
 					{
-						if (RationalNumber.TryParse(coeffPart, out var parsedCoeff))
+						if (coeffPart.Contains("^"))
+							coeffPart = coeffPart.Substring(0, coeffPart.IndexOf('^'));
+						if (Matrix.TryParse(coeffPart, out var parsedMatrix))
 						{
-							coefficient = parsedCoeff!;
+							coefficient = parsedMatrix!;
+						}
+						else if (coeffPart.Contains("i") && ComplexNumber.TryParse(coeffPart, out var parsedComplex))
+						{
+							coefficient = parsedComplex!;
+						}
+						else if (RationalNumber.TryParse(coeffPart, out var parsedRational))
+						{
+							coefficient = parsedRational!;
 						}
 					}
 					power = 1;
@@ -690,6 +738,9 @@ namespace ComputorV2.Core.Types
 				
 				if (term.Contains("^"))
 				{
+					Console.WriteLine(coefficient);
+					if (coefficient == null)
+						coefficient = new RationalNumber(1);
 					var powerPart = term.Substring(term.IndexOf('^') + 1);
 					if (int.TryParse(powerPart, out int parsedPower))
 					{
@@ -741,6 +792,7 @@ namespace ComputorV2.Core.Types
 					i += _originalVariable.Length;
 				}
 			}
+			Console.WriteLine($"original variable->{_originalVariable}");
 		}
 
 		private string ConvertToXTerm(string term)
@@ -809,14 +861,63 @@ namespace ComputorV2.Core.Types
 			
 			return returnTerm!;
 		}
+
+		private string[] ComputeMultipleTerm(string[] parts)
+		{
+			string term = parts[0].Replace("*", "");
+			string stored = "";
+
+			for (int i = 1; i < parts.Length; i++)
+			{
+				if (parts[i].Contains("*"))
+					term += parts[i];
+				else if (parts[i].Contains("^"))
+					stored += parts[i];
+			}
+
+			Tokenizer tokenizer = new Tokenizer();
+			List<string> tokens = tokenizer.Tokenize(term);
+			Postfix postfix = new Postfix(tokens);
+			var result = postfix.Calculate();
+
+			string[] solved = new string[1];
+			solved[0] = result.ToString() + stored;
+			return solved;
+		}
 		
-		private bool CheckIfNeedsExpansion(string expression)
+		private bool CheckIfNeedsExpansion(string expression, out string side)
 		{
 			var match = System.Text.RegularExpressions.Regex.Match(expression, @"\((.*)\)");
-			return match.Success;
+			if (match.Success)
+			{
+				side = GetExpansionSide(expression);
+
+				return true;
+			}
+			side = "";
+
+			return false;
 		}
 
-		private string Expand(string expression)
+		private string GetExpansionSide(string expression)
+		{
+			for (int i = 0; i < expression.Length; i++)
+			{
+				char c = expression[i];
+
+				if (c == '(')
+				{
+					if (i > 0 && expression[i - 1] == '*')
+					{
+						return "right";
+					}
+				}
+			}
+
+			return "left";
+		}
+
+		private string ExpandLeft(string expression)
 		{
 			int openIndex = 0;
 			int closeIndex = 0;
@@ -835,6 +936,7 @@ namespace ComputorV2.Core.Types
 			string left = expression.Substring(0, openIndex);
 			string parenthesis = expression.Substring(openIndex);
 			string op;
+
 			if (closeIndex < expression.Length - 1)
 				op = expression[closeIndex + 1].ToString();
 			else
@@ -862,11 +964,50 @@ namespace ComputorV2.Core.Types
 			return result;
 		}
 
-		private string ExecuteExpansion(string expression, string op)
+		private string ExpandRight(string expression)
+		{
+			int openIndex = 0;
+			int closeIndex = 0;
+
+			for (int i = 0; i < expression.Length; i++)
+			{
+				char c = expression[i];
+				if (c == '(')
+					openIndex = i;
+				else if (c == ')')
+					closeIndex = i;
+				
+				if (openIndex != 0 && closeIndex != 0)
+					break;
+			}
+
+			if (expression[openIndex - 1] == '*') openIndex--;
+			while (char.IsDigit(expression[openIndex])) openIndex--;
+
+			string left = expression.Substring(0, openIndex - 1);
+			string parenthesis = expression.Substring(openIndex - 1, closeIndex - openIndex + 2);
+			string right = expression.Substring(closeIndex + 1);
+			string op = "*";
+
+			parenthesis = ExecuteExpansion(parenthesis, op, true);
+
+			expression = left + parenthesis.Replace("(", "").Replace(")", "") + right;
+
+			return expression;
+		}
+
+		private string ExecuteExpansion(string expression, string op, bool invert = false)
 		{
 			string[] parts = expression.Split(op);
 			string left = parts[0].Trim('(', ')');
 			string right = parts[1];
+
+			if (invert)
+			{
+				string tmp = left;
+				left = right;
+				right = tmp;
+			}
 
 			switch (op)
 			{
@@ -913,7 +1054,10 @@ namespace ComputorV2.Core.Types
 					else
 					{
 						if (char.IsDigit(left[i]))
-							sb.Append((decimal.Parse(left[i].ToString()) * decimal.Parse(right)).ToString());
+						{
+							accumulatedNumber += left[i].ToString();
+							sb.Append((decimal.Parse(accumulatedNumber) * decimal.Parse(right)).ToString());
+						}
 						else if (left[i] == 'x')
 						{
 							if (accumulatedNumber.Length > 0)

@@ -332,6 +332,8 @@ namespace ComputorV2.Core.Types
 				return this * (RationalNumber)other;
 			else if (other.GetType() == typeof(ComplexNumber))
 				return new ComplexNumber(this) * other;
+			else if (other.GetType() == typeof(Matrix))
+				return other.Multiply(this);
 			
 			throw new ArgumentException($"Cannot add {GetType().Name} and {other.GetType().Name}");
 		}
