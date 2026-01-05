@@ -120,7 +120,7 @@ Here, an example of a graphical representation of the functin `f(x) = 42 * x + 4
 
 My personal thoughts: it is kinda cool.
 
-## Execution instructions
+## Execution Instructions
 Pretty straight forward:
 - Clone the repo
 - Run `make run` command in your console application
