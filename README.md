@@ -16,6 +16,7 @@
 ## Table of Contents
 1. [Project Overview](#project-overview)
 2. [Feature Breakdown](#feature-breakdown)
+3. [Execution Instructions](#execution-instructions)
 
 ---
 
